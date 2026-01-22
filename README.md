@@ -16,9 +16,9 @@ This library provides a bi-directional bridge between the human-readable CellML 
 ## Installation
 
 ```bash
-npm install cellmltexteditor
+npm install cellml-text-editor
 # or
-yarn add cellmltexteditor
+yarn add cellml-text-editor
 
 ```
 
@@ -27,7 +27,7 @@ yarn add cellmltexteditor
 ### 1. Parse Text to XML
 
 ```typescript
-import { CellMLTextParser } from 'cellmltexteditor';
+import { CellMLTextParser } from 'cellml-text-editor';
 
 const code = `
 def model my_model
@@ -51,7 +51,7 @@ if (result.errors.length > 0) {
 ### 2. Convert XML to Text
 
 ```typescript
-import { CellMLTextGenerator } from 'cellmltexteditor';
+import { CellMLTextGenerator } from 'cellml-text-editor';
 
 const generator = new CellMLTextGenerator();
 // Assume 'doc' is a CellML XMLDocument
@@ -66,7 +66,7 @@ console.log(textOutput);
 Useful for rendering mathematical previews of your CellML models.
 
 ```typescript
-import { CellMLLatexGenerator } from 'cellmltexteditor';
+import { CellMLLatexGenerator } from 'cellml-text-editor';
 
 // Assume 'mathNode' is a MathML Element from your parsed document
 const latexGen = new CellMLLatexGenerator();
@@ -81,7 +81,7 @@ console.log(latexString); // e.g. "\frac{dV}{dt} = -I_{ion}"
 You can configure the parser to tag the output XML with source line numbers. This is enabled by default to help build editor integrations (like highlighting the source line when clicking a diagram).
 
 ```typescript
-import { CellMLTextParser } from 'cellmltexteditor';
+import { CellMLTextParser } from 'cellml-text-editor';
 
 // Default behavior: Adds 'data-source-line' attributes to XML
 const parser = new CellMLTextParser();

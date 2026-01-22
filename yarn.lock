@@ -1459,9 +1459,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cellmltexteditor@workspace:.":
+"cellml-text-editor@workspace:.":
   version: 0.0.0-use.local
-  resolution: "cellmltexteditor@workspace:."
+  resolution: "cellml-text-editor@workspace:."
   dependencies:
     "@tsconfig/node24": "npm:^24.0.3"
     "@types/node": "npm:^24.10.4"
