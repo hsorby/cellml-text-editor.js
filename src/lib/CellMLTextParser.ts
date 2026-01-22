@@ -1,0 +1,378 @@
+import { CellMLTextScanner, TokenType } from './CellMLTextScanner'
+
+const CELLML_NS = 'http://www.cellml.org/cellml/2.0#'
+const MATHML_NS = 'http://www.w3.org/1998/Math/MathML'
+
+export interface ParserOptions {
+  /**
+   * The attribute name used to tag MathML elements with their source line number.
+   * Set to null or empty string to disable source tracking in the DOM entirely.
+   * @default "data-source-line"
+   */
+  sourceLineAttribute?: string | null
+}
+
+export interface ParserError {
+  line: number
+  message: string
+}
+
+export interface ParserResult {
+  xml: string | null
+  errors: ParserError[]
+}
+
+export class CellMLTextParser {
+  private scanner!: CellMLTextScanner
+  private doc!: XMLDocument
+  private sourceLineAttr: string | null
+
+  constructor(options: ParserOptions = {}) {
+    // Default to 'data-source-line' if undefined, but allow null to disable
+    this.sourceLineAttr = options.sourceLineAttribute === undefined ? 'data-source-line' : options.sourceLineAttribute
+  }
+
+  public parse(text: string): ParserResult {
+    this.scanner = new CellMLTextScanner(text)
+    this.doc = document.implementation.createDocument(CELLML_NS, 'model', null)
+
+    try {
+      const root = this.doc.documentElement
+      // The createDocument call sets the namespace on the root, but we need to ensure attributes are handled
+
+      // Expect: def model <name> as
+      this.expect(TokenType.KwDef)
+      this.expect(TokenType.KwModel)
+
+      if (this.scanner.token === TokenType.Identifier) {
+        root.setAttribute('name', this.scanner.value)
+        this.scanner.nextToken()
+      }
+
+      this.expect(TokenType.KwAs)
+
+      while (this.scanner.token !== TokenType.KwEndDef && this.scanner.token !== TokenType.EOF) {
+        if (this.scanner.token === TokenType.KwDef) {
+          // Check lookahead for 'comp' or 'unit'
+          // We are already at 'def', so we parse based on context
+          this.parseBlock(root)
+        } else {
+          // Unexpected, consume to avoid infinite loop
+          this.scanner.nextToken()
+        }
+      }
+
+      this.expect(TokenType.KwEndDef) // enddef
+      this.expect(TokenType.SemiColon) // ; (optional in some grammars, but strict in C++)
+
+      return { xml: '<?xml version="1.0" encoding="UTF-8"?>\n' + this.serialize(root), errors: [] }
+    } catch (e: any) {
+      return { xml: null, errors: [{ line: this.scanner.getLine(), message: e.message || 'Unknown parsing error' }] }
+    }
+  }
+
+  private parseBlock(parent: Element) {
+    this.expect(TokenType.KwDef) // Consume 'def'
+
+    if (this.scanner.token === TokenType.KwComp) {
+      this.parseComponent(parent)
+    } else if (this.scanner.token === TokenType.KwUnit) {
+      this.parseUnit(parent)
+    } else {
+      throw new Error("Expected 'comp' or 'unit' after 'def'")
+    }
+  }
+
+  private parseComponent(parent: Element) {
+    this.expect(TokenType.KwComp)
+    const name = this.expectValue(TokenType.Identifier)
+    this.expect(TokenType.KwAs)
+
+    const comp = this.doc.createElementNS(CELLML_NS, 'component')
+    comp.setAttribute('name', name)
+    parent.appendChild(comp)
+
+    while (this.scanner.token !== TokenType.KwEndDef) {
+      if (this.scanner.token === TokenType.KwVar) {
+        this.parseVariable(comp)
+      } else if (this.scanner.token === TokenType.Identifier || this.scanner.token === TokenType.KwSel) {
+        // Assume Math start (variable name or 'sel')
+        this.parseMathEquation(comp)
+      } else {
+        // Skip unknown inside component
+        this.scanner.nextToken()
+      }
+    }
+
+    this.expect(TokenType.KwEndDef)
+    this.expect(TokenType.SemiColon)
+  }
+
+  // var V: millivolt {init: -65, interface: public};
+  private parseVariable(parent: Element) {
+    this.expect(TokenType.KwVar)
+    const name = this.expectValue(TokenType.Identifier)
+    this.expect(TokenType.Colon)
+    const units = this.expectValue(TokenType.Identifier)
+
+    const variable = this.doc.createElementNS(CELLML_NS, 'variable')
+    variable.setAttribute('name', name)
+    variable.setAttribute('units', units)
+
+    // Properties { ... }
+    if ((this.scanner.token as TokenType) === TokenType.LBrace) {
+      this.scanner.nextToken() // eat {
+      while ((this.scanner.token as TokenType) !== TokenType.RBrace && this.scanner.token !== TokenType.EOF) {
+        const prop = this.expectValue(TokenType.Identifier)
+        this.expect(TokenType.Colon)
+        // Value can be identifier (public) or Number (-65)
+        let val = ''
+        if ((this.scanner.token as TokenType) === TokenType.OpMinus) {
+          this.scanner.nextToken()
+          val = '-' + this.expectValue(TokenType.Number)
+        } else if ((this.scanner.token as TokenType) === TokenType.Number) {
+          val = this.expectValue(TokenType.Number)
+        } else {
+          val = this.expectValue(TokenType.Identifier)
+        }
+
+        // Mapping
+        if (prop === 'init') variable.setAttribute('initial_value', val)
+        else if (prop === 'interface') variable.setAttribute('interface', val) // simplified
+
+        if ((this.scanner.token as TokenType) === TokenType.OpComma) this.scanner.nextToken()
+      }
+      this.expect(TokenType.RBrace) // eat }
+    }
+
+    this.expect(TokenType.SemiColon)
+    parent.appendChild(variable)
+  }
+
+  private parseUnit(parent: Element) {
+    // Basic placeholder - logic is similar to var
+    this.expect(TokenType.KwUnit)
+    // ... implementation similar to comp/var ...
+    // Consume until enddef
+    while (this.scanner.token !== TokenType.KwEndDef && this.scanner.token !== TokenType.EOF) this.scanner.nextToken()
+    this.expect(TokenType.KwEndDef)
+    this.expect(TokenType.SemiColon)
+  }
+
+  // --- Math Parsing ---
+
+  private parseMathEquation(parent: Element) {
+    const startLine = this.scanner.getLine()
+    // We need a <math> container. In CellML, components usually have one <math> block,
+    // but for this parser we append expressions to it.
+    let math = parent.getElementsByTagNameNS(MATHML_NS, 'math')[0]
+    if (!math) {
+      math = this.doc.createElementNS(MATHML_NS, 'math')
+      parent.appendChild(math)
+    }
+
+    const apply = this.doc.createElementNS(MATHML_NS, 'apply')
+    if (this.sourceLineAttr) {
+      apply.setAttribute(this.sourceLineAttr, startLine.toString())
+    }
+
+    const eq = this.doc.createElementNS(MATHML_NS, 'eq')
+    apply.appendChild(eq)
+
+    // LHS: Could be 'V' or 'ode(V, t)'
+    const lhsNode = this.parseExpression()
+
+    this.expect(TokenType.OpEq)
+
+    const rhsNode = this.parseExpression()
+
+    apply.appendChild(lhsNode)
+    apply.appendChild(rhsNode)
+
+    math.appendChild(apply)
+
+    this.expect(TokenType.SemiColon)
+  }
+
+  // Recursive Descent for Math: Expression -> Term -> Factor
+  private parseExpression(): Element {
+    let left = this.parseTerm()
+
+    while (this.scanner.token === TokenType.OpPlus || this.scanner.token === TokenType.OpMinus) {
+      const op = this.scanner.token
+      this.scanner.nextToken()
+      const right = this.parseTerm()
+
+      const apply = this.doc.createElementNS(MATHML_NS, 'apply')
+      const opNode = this.doc.createElementNS(MATHML_NS, op === TokenType.OpPlus ? 'plus' : 'minus')
+      apply.appendChild(opNode)
+      apply.appendChild(left)
+      apply.appendChild(right)
+      left = apply
+    }
+    return left
+  }
+
+  private parseTerm(): Element {
+    let left = this.parseFactor()
+
+    while (this.scanner.token === TokenType.OpTimes || this.scanner.token === TokenType.OpDivide) {
+      const op = this.scanner.token
+      this.scanner.nextToken()
+      const right = this.parseFactor()
+
+      const apply = this.doc.createElementNS(MATHML_NS, 'apply')
+      const opNode = this.doc.createElementNS(MATHML_NS, op === TokenType.OpTimes ? 'times' : 'divide')
+      apply.appendChild(opNode)
+      apply.appendChild(left)
+      apply.appendChild(right)
+      left = apply
+    }
+    return left
+  }
+
+  private parseFactor(): Element {
+    // Identifier, Number, or Parentheses
+    if (this.scanner.token === TokenType.Number) {
+      const val = this.scanner.value
+      this.scanner.nextToken()
+      const cn = this.doc.createElementNS(MATHML_NS, 'cn')
+      cn.textContent = val
+
+      // Check for {units: ...} attached to number
+      if ((this.scanner.token as TokenType) === TokenType.LBrace) {
+        this.scanner.nextToken()
+        if (this.scanner.value === 'units') {
+          this.scanner.nextToken() // eat 'units'
+          this.expect(TokenType.Colon)
+          const uVal = this.expectValue(TokenType.Identifier)
+          cn.setAttributeNS(CELLML_NS, 'cellml:units', uVal)
+        }
+        // consume rest of brace content if any
+        while ((this.scanner.token as TokenType) !== TokenType.RBrace) this.scanner.nextToken()
+        this.expect(TokenType.RBrace)
+      }
+      return cn
+    } else if (this.scanner.token === TokenType.Identifier) {
+      const name = this.scanner.value
+      this.scanner.nextToken()
+
+      // Check if function call: ode(a, b) or sin(x)
+      if ((this.scanner.token as TokenType) === TokenType.LParam) {
+        return this.parseFunctionCall(name)
+      }
+
+      const ci = this.doc.createElementNS(MATHML_NS, 'ci')
+      ci.textContent = name
+      return ci
+    } else if (this.scanner.token === TokenType.LParam) {
+      this.scanner.nextToken() // (
+      const node = this.parseExpression()
+      this.expect(TokenType.RParam) // )
+      return node
+    }
+
+    throw new Error(`Unexpected token in math: ${this.scanner.value}`)
+  }
+
+  private parseFunctionCall(funcName: string): Element {
+    this.expect(TokenType.LParam)
+
+    // Special Case: ode(dep, indep) -> <diff/> <bvar>indep</bvar> dep
+    if (funcName === 'ode') {
+      const dep = this.parseExpression() // V
+      this.expect(TokenType.OpComma)
+      const indep = this.parseExpression() // t
+      this.expect(TokenType.RParam)
+
+      const diffApply = this.doc.createElementNS(MATHML_NS, 'apply')
+      diffApply.appendChild(this.doc.createElementNS(MATHML_NS, 'diff'))
+
+      const bvar = this.doc.createElementNS(MATHML_NS, 'bvar')
+      bvar.appendChild(indep)
+      diffApply.appendChild(bvar)
+
+      diffApply.appendChild(dep)
+      return diffApply
+    }
+
+    // Normal function (sin, cos)
+    const apply = this.doc.createElementNS(MATHML_NS, 'apply')
+    const op = this.doc.createElementNS(MATHML_NS, funcName)
+    apply.appendChild(op)
+
+    // Parse arguments
+    if (this.scanner.token !== TokenType.RParam) {
+      do {
+        if (this.scanner.token === TokenType.OpComma) this.scanner.nextToken()
+        apply.appendChild(this.parseExpression())
+      } while (this.scanner.token === TokenType.OpComma)
+    }
+
+    this.expect(TokenType.RParam)
+    return apply
+  }
+
+  // --- Helpers ---
+  private expect(type: TokenType) {
+    if (this.scanner.token !== type) {
+      throw new Error(`Syntax Error: Expected ${TokenType[type]} but found '${this.scanner.value}'`)
+    }
+    this.scanner.nextToken()
+  }
+
+  private expectValue(type: TokenType): string {
+    if (this.scanner.token !== type) {
+      throw new Error(`Expected value of type ${type}, got ${this.scanner.token}`)
+    }
+    const val = this.scanner.value
+    this.scanner.nextToken()
+    return val
+  }
+
+  private serialize(node: Element, level: number = 0): string {
+    const indent = '  '.repeat(level)
+    const tagName = node.tagName // will include prefix if set
+
+    // 1. Build Attributes String
+    let props = ''
+    for (let i = 0; i < node.attributes.length; i++) {
+      const attr = node.attributes[i]
+      if (attr) {
+        if (this.sourceLineAttr && attr.name === this.sourceLineAttr) {
+          continue
+        }
+        props += ` ${attr.name}="${attr.value}"`
+      }
+    }
+
+    // 2. Determine if we have children
+    const children = Array.from(node.childNodes)
+    const hasElementChildren = children.some((c) => c.nodeType === 1) // 1 = Element
+    const textContent = node.textContent?.trim()
+
+    // 3. Self-closing tag (e.g. <diff/>)
+    if (children.length === 0 && !textContent) {
+      return `${indent}<${tagName}${props}/>`
+    }
+
+    // 4. Node with text only (e.g. <cn>10</cn> or <ci>x</ci>)
+    // We print this on a single line to preserve MathML readability
+    if (!hasElementChildren) {
+      return `${indent}<${tagName}${props}>${textContent}</${tagName}>`
+    }
+
+    // 5. Node with nested elements (e.g. <apply>, <component>)
+    let output = `${indent}<${tagName}${props}>\n`
+
+    children.forEach((child) => {
+      if (child.nodeType === 1) {
+        // Recursively serialize elements
+        output += this.serialize(child as Element, level + 1) + '\n'
+      }
+    })
+
+    output += `${indent}</${tagName}>`
+    return output
+  }
+}

@@ -1,0 +1,198 @@
+export enum TokenType {
+  EOF,
+  Identifier, // my_var
+  Number, // 10.5
+  String, // "some text"
+
+  // Keywords
+  KwDef,
+  KwModel,
+  KwComp,
+  KwEndDef,
+  KwAs,
+  KwVar,
+  KwUnit,
+  KwSel,
+  KwCase,
+  KwOtherwise,
+  KwEndSel,
+
+  // Symbols
+  OpEq, // =
+  OpPlus, // +
+  OpMinus, // -
+  OpTimes, // *
+  OpDivide, // /
+  OpComma, // ,
+  Colon, // :
+  SemiColon, // ;
+  LParam, // (
+  RParam, // )
+  LBrace, // {
+  RBrace, // }
+}
+
+export class CellMLTextScanner {
+  private input: string
+  private pos: number = 0
+  private line: number = 1
+  private length: number
+  private currentToken: TokenType = TokenType.EOF
+  private currentValue: string = ''
+
+  constructor(input: string) {
+    this.input = input
+    this.length = input.length
+    this.nextToken() // Prime the pump
+  }
+
+  public get token(): TokenType {
+    return this.currentToken
+  }
+  public get value(): string {
+    return this.currentValue
+  }
+
+  // Advance to the next token
+  public nextToken(): void {
+    const linesSkipped = this.skipWhitespace()
+    this.line += linesSkipped
+
+    if (this.pos >= this.length) {
+      this.currentToken = TokenType.EOF
+      return
+    }
+
+    const char = this.input[this.pos]
+
+    // 1. Identifiers and Keywords
+    if (/[a-zA-Z_]/.test(char || '')) {
+      let start = this.pos
+      while (this.pos < this.length && /[a-zA-Z0-9_]/.test(this.input[this.pos] || '')) {
+        this.pos++
+      }
+      const word = this.input.slice(start, this.pos)
+      this.currentValue = word
+      this.currentToken = this.getKeywordType(word)
+      return
+    }
+
+    // 2. Numbers
+    if (/[0-9]/.test(char || '') || (char === '.' && /[0-9]/.test(this.input[this.pos + 1] || ''))) {
+      let start = this.pos
+      // Integer part
+      while (this.pos < this.length && /[0-9]/.test(this.input[this.pos] || '')) this.pos++
+      // Decimal part
+      if (this.input[this.pos] === '.') {
+        this.pos++
+        while (this.pos < this.length && /[0-9]/.test(this.input[this.pos] || '')) this.pos++
+      }
+      // Scientific notation (1e-5)
+      if (this.input[this.pos] === 'e' || this.input[this.pos] === 'E') {
+        this.pos++
+        if (this.input[this.pos] === '+' || this.input[this.pos] === '-') this.pos++
+        while (this.pos < this.length && /[0-9]/.test(this.input[this.pos] || '')) this.pos++
+      }
+      this.currentValue = this.input.slice(start, this.pos)
+      this.currentToken = TokenType.Number
+      return
+    }
+
+    // 3. Symbols
+    this.pos++ // Consume the char
+    this.currentValue = char || ''
+    switch (char) {
+      case '=':
+        this.currentToken = TokenType.OpEq
+        break
+      case '+':
+        this.currentToken = TokenType.OpPlus
+        break
+      case '-':
+        this.currentToken = TokenType.OpMinus
+        break
+      case '*':
+        this.currentToken = TokenType.OpTimes
+        break
+      case '/':
+        this.currentToken = TokenType.OpDivide
+        break
+      case '(':
+        this.currentToken = TokenType.LParam
+        break
+      case ')':
+        this.currentToken = TokenType.RParam
+        break
+      case '{':
+        this.currentToken = TokenType.LBrace
+        break
+      case '}':
+        this.currentToken = TokenType.RBrace
+        break
+      case ':':
+        this.currentToken = TokenType.Colon
+        break
+      case ';':
+        this.currentToken = TokenType.SemiColon
+        break
+      case ',':
+        this.currentToken = TokenType.OpComma
+        break
+      default:
+        console.warn('Unknown char:', char)
+        this.nextToken() // Skip unknown
+    }
+  }
+
+  public getLine(): number {
+    return this.line
+  }
+
+  private skipWhitespace(): number {
+    let newLinesFound = 0;
+    while (this.pos < this.length) {
+      const c = this.input[this.pos]
+      if (/\s/.test(c || '')) {
+        if (c === '\n') newLinesFound++
+        this.pos++
+      } else if (c === '/' && this.input[this.pos + 1] === '/') {
+        // Single line comment
+        this.pos += 2
+        while (this.pos < this.length && this.input[this.pos] !== '\n') this.pos++
+      } else {
+        break
+      }
+    }
+
+    return newLinesFound
+  }
+
+  private getKeywordType(word: string): TokenType {
+    switch (word) {
+      case 'def':
+        return TokenType.KwDef
+      case 'model':
+        return TokenType.KwModel
+      case 'comp':
+        return TokenType.KwComp
+      case 'enddef':
+        return TokenType.KwEndDef
+      case 'as':
+        return TokenType.KwAs
+      case 'var':
+        return TokenType.KwVar
+      case 'unit':
+        return TokenType.KwUnit
+      case 'sel':
+        return TokenType.KwSel
+      case 'case':
+        return TokenType.KwCase
+      case 'otherwise':
+        return TokenType.KwOtherwise
+      case 'endsel':
+        return TokenType.KwEndSel
+      default:
+        return TokenType.Identifier
+    }
+  }
+}

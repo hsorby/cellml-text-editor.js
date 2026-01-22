@@ -1,0 +1,61 @@
+{
+  "name": "cellml-text-editor",
+  "version": "0.1.0",
+  "private": false,
+  "description": "A CellML text editor library for parsing and generating CellML text representations.",
+  "keywords": [
+    "cellml",
+    "text editor",
+    "parser",
+    "generator",
+    "latex"
+  ],
+  "author": {
+    "name": "Hugh Sorby",
+    "email": "h.sorby@auckland.ac.nz"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hsorby/cellml-text-editor.js.git"
+  },
+  "license": "Apache-2.0",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/cellml-text-editor.umd.cjs",
+  "module": "./dist/cellml-text-editor.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/cellml-text-editor.js",
+      "require": "./dist/cellml-text-editor.umd.cjs"
+    }
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "preview": "vite preview",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.3",
+    "@types/node": "^24.10.4",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "@vue/tsconfig": "^0.8.1",
+    "katex": "^0.16.27",
+    "npm-run-all2": "^8.0.4",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.0",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-vue-devtools": "^8.0.5",
+    "vue": "^3.5.26",
+    "vue-tsc": "^3.2.2",
+    "vue3-libcellml.js": "^0.6.3"
+  }
+}
