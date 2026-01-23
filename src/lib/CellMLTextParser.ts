@@ -232,6 +232,23 @@ export class CellMLTextParser {
   }
 
   private parseFactor(): Element {
+    // Handle unary minus.
+    if (this.scanner.token === TokenType.OpMinus) {
+      this.scanner.nextToken() // Consume the '-'
+
+      // Recursively call parseFactor.
+      // This handles cases like "-5", "-a", or even "- -5"
+      const child = this.parseFactor()
+
+      // Create the <apply><minus/><child/></apply> structure
+      const apply = this.doc.createElementNS(MATHML_NS, 'apply')
+      const minus = this.doc.createElementNS(MATHML_NS, 'minus')
+
+      apply.appendChild(minus)
+      apply.appendChild(child)
+
+      return apply
+    }
     // Identifier, Number, or Parentheses.
     if (this.scanner.token === TokenType.Number) {
       const val = this.scanner.value
