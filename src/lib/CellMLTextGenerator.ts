@@ -4,6 +4,7 @@ export class CellMLTextGenerator {
   private output: string = ''
   private indentLevel: number = 0
   private domParser: DOMParser
+  private standardIndent: string = '    '
 
   constructor() {
     this.domParser = new DOMParser()
@@ -11,7 +12,7 @@ export class CellMLTextGenerator {
 
   // --- Helper: Indentation ---
   private indent(): string {
-    return '    '.repeat(this.indentLevel)
+    return this.standardIndent.repeat(this.indentLevel)
   }
 
   private append(str: string, newLine: boolean = true) {
@@ -224,13 +225,13 @@ export class CellMLTextGenerator {
         // <piece> <value> <condition> </piece>
         const val = this.parseMathNode(child.children[0])
         const cond = this.parseMathNode(child.children[1])
-        pieces.push(`case ${cond}: ${val};`)
+        pieces.push(`${this.standardIndent}case ${cond}: ${val};`)
       } else if (child.localName === 'otherwise') {
         const val = this.parseMathNode(child.children[0])
-        pieces.push(`otherwise ${val};`)
+        pieces.push(`${this.standardIndent}otherwise: ${val};`)
       }
     })
 
-    return `sel\n        ${pieces.join('\n        ')}\n    endsel`
+    return `sel\n${this.indent()}${pieces.join(`\n${this.indent()}`)}\n${this.indent()}endsel`
   }
 }

@@ -232,14 +232,14 @@ export class CellMLTextParser {
   }
 
   private parseFactor(): Element {
-    // Identifier, Number, or Parentheses
+    // Identifier, Number, or Parentheses.
     if (this.scanner.token === TokenType.Number) {
       const val = this.scanner.value
       this.scanner.nextToken()
       const cn = this.doc.createElementNS(MATHML_NS, 'cn')
       cn.textContent = val
 
-      // Check for {units: ...} attached to number
+      // Check for {units: ...} attached to number.
       if ((this.scanner.token as TokenType) === TokenType.LBrace) {
         this.scanner.nextToken()
         if (this.scanner.value === 'units') {
@@ -257,7 +257,7 @@ export class CellMLTextParser {
       const name = this.scanner.value
       this.scanner.nextToken()
 
-      // Check if function call: ode(a, b) or sin(x)
+      // Check if function call: ode(a, b) or sin(x).
       if ((this.scanner.token as TokenType) === TokenType.LParam) {
         return this.parseFunctionCall(name)
       }
@@ -270,9 +270,55 @@ export class CellMLTextParser {
       const node = this.parseExpression()
       this.expect(TokenType.RParam) // )
       return node
+    } else if (this.scanner.token === TokenType.KwSel) {
+      return this.parsePiecewise()
     }
 
     throw new Error(`Unexpected token in math: ${this.scanner.value}`)
+  }
+
+  private parsePiecewise(): Element {
+    const piecewise = this.doc.createElementNS(MATHML_NS, 'piecewise')
+
+    this.expect(TokenType.KwSel) // Consume 'sel'
+
+    // Handle 'case' blocks
+    while (this.scanner.token === TokenType.KwCase) {
+      this.expect(TokenType.KwCase)
+
+      // Parse condition (e.g., x > y)
+      const condition = this.parseExpression()
+
+      this.expect(TokenType.Colon)
+
+      // Parse value (e.g., 10.0)
+      const value = this.parseExpression()
+
+      this.expect(TokenType.SemiColon)
+
+      const piece = this.doc.createElementNS(MATHML_NS, 'piece')
+      // MathML order is <piece> value condition </piece>
+      piece.appendChild(value)
+      piece.appendChild(condition)
+      piecewise.appendChild(piece)
+    }
+
+    // Handle optional 'otherwise' block
+    if (this.scanner.token === TokenType.KwOtherwise) {
+      this.expect(TokenType.KwOtherwise)
+      this.expect(TokenType.Colon)
+
+      const value = this.parseExpression()
+
+      this.expect(TokenType.SemiColon)
+
+      const otherwise = this.doc.createElementNS(MATHML_NS, 'otherwise')
+      otherwise.appendChild(value)
+      piecewise.appendChild(otherwise)
+    }
+
+    this.expect(TokenType.KwEndSel)
+    return piecewise
   }
 
   private parseFunctionCall(funcName: string): Element {
