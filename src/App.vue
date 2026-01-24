@@ -98,7 +98,6 @@ watch(
   xmlInput,
   (newVal) => {
     if (isUpdatingFromXml.value) return
-    console.log('XML changed, regenerating text...')
     textOutput.value = generator.generate(newVal)
   },
   { immediate: true }
@@ -138,8 +137,9 @@ onMounted(async () => {
   })
   await libcellmlReadyPromise
 
-  const currentModule = Object.keys(cellmlModules)[0] || ''
-  console.log('Loading CellML module:', currentModule)
+  const currentIndex = 5
+  const currentModule = Object.keys(cellmlModules)[currentIndex] || ''
+  console.log(`Loading CellML module: ${currentModule} [${currentIndex}/${Object.keys(cellmlModules).length}]`)
   const cellMLModelString = cellmlModules[currentModule]?.default
   xmlInput.value = updateCellMLModel(cellMLModelString)
   parser.parse(textOutput.value)
