@@ -29,6 +29,7 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./",\
         "packageDependencies": [\
           ["@tsconfig/node24", "npm:24.0.4"],\
+          ["@types/katex", "npm:0.16.8"],\
           ["@types/node", "npm:24.10.9"],\
           ["@vitejs/plugin-vue", "virtual:575179318b6caef4c2210110ad5952457a32831f8e2dc517d7ff927782686467ee5bba60959d063f79b19ac02dbb7dfaf18552e9ae1ced9c2809967f652cdb8f#npm:6.0.3"],\
           ["@vue/tsconfig", "virtual:575179318b6caef4c2210110ad5952457a32831f8e2dc517d7ff927782686467ee5bba60959d063f79b19ac02dbb7dfaf18552e9ae1ced9c2809967f652cdb8f#npm:0.8.1"],\
@@ -1308,6 +1309,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["@types/katex", [\
+      ["npm:0.16.8", {\
+        "packageLocation": "../../../.yarn/berry/cache/@types-katex-npm-0.16.8-24b9e912a2-10c0.zip/node_modules/@types/katex/",\
+        "packageDependencies": [\
+          ["@types/katex", "npm:0.16.8"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["@types/node", [\
       ["npm:24.10.9", {\
         "packageLocation": "../../../.yarn/berry/cache/@types-node-npm-24.10.9-334f1bf8b5-10c0.zip/node_modules/@types/node/",\
@@ -1933,6 +1943,7 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./",\
         "packageDependencies": [\
           ["@tsconfig/node24", "npm:24.0.4"],\
+          ["@types/katex", "npm:0.16.8"],\
           ["@types/node", "npm:24.10.9"],\
           ["@vitejs/plugin-vue", "virtual:575179318b6caef4c2210110ad5952457a32831f8e2dc517d7ff927782686467ee5bba60959d063f79b19ac02dbb7dfaf18552e9ae1ced9c2809967f652cdb8f#npm:6.0.3"],\
           ["@vue/tsconfig", "virtual:575179318b6caef4c2210110ad5952457a32831f8e2dc517d7ff927782686467ee5bba60959d063f79b19ac02dbb7dfaf18552e9ae1ced9c2809967f652cdb8f#npm:0.8.1"],\

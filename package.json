@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.3",
+    "@types/katex": "^0.16.8",
     "@types/node": "^24.10.4",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/tsconfig": "^0.8.1",
