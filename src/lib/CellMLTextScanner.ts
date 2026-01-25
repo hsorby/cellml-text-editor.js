@@ -18,7 +18,7 @@ export enum TokenType {
   KwEndSel,
 
   // Symbols
-  OpEq, // =
+  OpAss, // =
   OpPlus, // +
   OpMinus, // -
   OpTimes, // *
@@ -30,6 +30,18 @@ export enum TokenType {
   RParam, // )
   LBrace, // {
   RBrace, // }
+
+  // Comparison Operators
+  OpEq, // ==
+  OpNe, // !=
+  OpLt, // <
+  OpLe, // <=
+  OpGt, // >
+  OpGe, // >=
+
+  // Logical Operators
+  OpAnd, // and
+  OpOr, // or
 }
 
 export class CellMLTextScanner {
@@ -102,9 +114,46 @@ export class CellMLTextScanner {
     this.pos++ // Consume the char
     this.currentValue = char || ''
     switch (char) {
+      // --- ASSIGNMENT VS EQUALITY ---
       case '=':
-        this.currentToken = TokenType.OpEq
+        if (this.input[this.pos] === '=') {
+          this.pos++ // Consume the second '='
+          this.currentValue = '=='
+          this.currentToken = TokenType.OpEq // The comparison (==)
+        } else {
+          this.currentToken = TokenType.OpAss // The assignment (=)
+        }
         break
+      case '!':
+        if (this.input[this.pos] === '=') {
+          this.pos++
+          this.currentValue = '!='
+          this.currentToken = TokenType.OpNe
+        } else {
+          // CellML usually doesn't use '!' alone, but good to handle safely
+          console.warn(`Unexpected character '!' at pos ${this.pos}`)
+          this.nextToken()
+        }
+        break
+      case '<':
+        if (this.input[this.pos] === '=') {
+          this.pos++
+          this.currentValue = '<='
+          this.currentToken = TokenType.OpLe
+        } else {
+          this.currentToken = TokenType.OpLt
+        }
+        break
+      case '>':
+        if (this.input[this.pos] === '=') {
+          this.pos++
+          this.currentValue = '>='
+          this.currentToken = TokenType.OpGe
+        } else {
+          this.currentToken = TokenType.OpGt
+        }
+        break
+      // --- OTHER SYMBOLS ---
       case '+':
         this.currentToken = TokenType.OpPlus
         break
@@ -149,7 +198,7 @@ export class CellMLTextScanner {
   }
 
   private skipWhitespace(): number {
-    let newLinesFound = 0;
+    let newLinesFound = 0
     while (this.pos < this.length) {
       const c = this.input[this.pos]
       if (/\s/.test(c || '')) {
@@ -191,6 +240,10 @@ export class CellMLTextScanner {
         return TokenType.KwOtherwise
       case 'endsel':
         return TokenType.KwEndSel
+      case 'and':
+        return TokenType.OpAnd
+      case 'or':
+        return TokenType.OpOr
       default:
         return TokenType.Identifier
     }

@@ -182,7 +182,7 @@ export class CellMLTextParser {
     // LHS: Could be 'V' or 'ode(V, t)'
     const lhsNode = this.parseExpression()
 
-    this.expect(TokenType.OpEq)
+    this.expect(TokenType.OpAss)
 
     const rhsNode = this.parseExpression()
 
@@ -194,7 +194,95 @@ export class CellMLTextParser {
     this.expect(TokenType.SemiColon)
   }
 
-  // Recursive Descent for Math: Expression -> Term -> Factor
+  // Recursive Descent for Math: Condition -> Comparison -> Expression -> Term -> Factor
+  private parseCondition(): Element {
+    // 1. Get the first comparison (e.g., "x > 5")
+    let left = this.parseComparison()
+
+    // 2. Loop while we see Logical Operators
+    while (this.scanner.token === TokenType.OpAnd || this.scanner.token === TokenType.OpOr) {
+      const op = this.scanner.token
+      this.scanner.nextToken() // Consume 'and' / 'or'
+
+      // 3. Get the next condition (e.g., "y < 10")
+      const right = this.parseComparison()
+
+      // 4. Wrap them in an <apply> block
+      const apply = this.doc.createElementNS(MATHML_NS, 'apply')
+
+      // MathML uses <and/> and <or/> tags
+      const opNode = this.doc.createElementNS(MATHML_NS, op === TokenType.OpAnd ? 'and' : 'or')
+
+      apply.appendChild(opNode)
+      apply.appendChild(left)
+      apply.appendChild(right)
+
+      // 5. The result becomes the new 'left' for the next iteration
+      // This supports chaining: a and b and c
+      left = apply
+    }
+
+    return left
+  }
+
+  private isComparisonToken(t: TokenType): boolean {
+    return [TokenType.OpEq, TokenType.OpNe, TokenType.OpLt, TokenType.OpLe, TokenType.OpGt, TokenType.OpGe].includes(t)
+  }
+
+  // The new parsing layer
+  private parseComparison(): Element {
+    // 1. Parse the left side (standard arithmetic expression)
+    let left = this.parseExpression()
+
+    // 2. Check if the next token is a comparison operator (==, <, >, etc.)
+    if (this.isComparisonToken(this.scanner.token)) {
+      const opToken = this.scanner.token
+      this.scanner.nextToken() // Consume the operator
+
+      // 3. Parse the right side
+      const right = this.parseExpression()
+
+      // 4. Create the <apply> block
+      const apply = this.doc.createElementNS(MATHML_NS, 'apply')
+
+      // Map token to MathML tag
+      let tagName = ''
+      switch (opToken) {
+        case TokenType.OpEq:
+          tagName = 'eq'
+          break
+        case TokenType.OpNe:
+          tagName = 'neq'
+          break
+        case TokenType.OpLt:
+          tagName = 'lt'
+          break
+        case TokenType.OpLe:
+          tagName = 'leq'
+          break
+        case TokenType.OpGt:
+          tagName = 'gt'
+          break
+        case TokenType.OpGe:
+          tagName = 'geq'
+          break
+        case TokenType.OpAnd:
+          tagName = 'and'
+          break
+      }
+
+      const opNode = this.doc.createElementNS(MATHML_NS, tagName)
+      apply.appendChild(opNode)
+      apply.appendChild(left)
+      apply.appendChild(right)
+
+      return apply
+    }
+
+    // If no comparison found, just return the expression (e.g. boolean variable)
+    return left
+  }
+
   private parseExpression(): Element {
     let left = this.parseTerm()
 
@@ -303,8 +391,8 @@ export class CellMLTextParser {
     while (this.scanner.token === TokenType.KwCase) {
       this.expect(TokenType.KwCase)
 
-      // Parse condition (e.g., x > y)
-      const condition = this.parseExpression()
+      // Parse condition (e.g., x > y, z < 10 and a == b)
+      const condition = this.parseCondition()
 
       this.expect(TokenType.Colon)
 

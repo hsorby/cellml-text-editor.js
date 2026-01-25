@@ -1,9 +1,28 @@
 export class CellMLLatexGenerator {
   public convert(mathMLNode: Element): string {
-    // If we are passed a raw <math> tag, find the first child
+    if (!mathMLNode) return ''
+
+    // Handle the <math> wrapper.
     if (mathMLNode.localName === 'math') {
-      return this.convert(mathMLNode.firstElementChild as Element)
+      // If there are multiple equations, we will map over them.
+      return Array.from(mathMLNode.children)
+        .map((child: Element) => this.convert(child)) // Recursively convert each equation
+        .join('\n')
     }
+
+    // Intercept Top-Level Assignments
+    // We check specifically for an <apply> block where the operator is <eq/>
+    if (mathMLNode.localName === 'apply' && mathMLNode.firstElementChild?.localName === 'eq') {
+      const children = Array.from(mathMLNode.children)
+
+      // Skip the operator (index 0)
+      const lhs = this.parseNode(children[1])
+      const rhs = this.parseNode(children[2])
+
+      return `${lhs} = ${rhs}`
+    }
+
+    //  Handle everything else (Expressions)
     return this.parseNode(mathMLNode)
   }
 
@@ -52,7 +71,7 @@ export class CellMLLatexGenerator {
     // Subscripts: "V_m" -> "V_{m}"
     if (name.includes('_')) {
       const parts = name.split('_')
-      const adjustedName = greek.includes(parts[0]) ? `\\${parts[0]}` : parts[0]
+      const adjustedName = greek.includes(parts[0] || '') ? `\\${parts[0]}` : parts[0]
       return `${adjustedName}_{${parts.slice(1).join('_')}}`
     }
 
@@ -74,10 +93,34 @@ export class CellMLLatexGenerator {
       case 'divide':
         return `\\frac{${args[0]}}{${args[1]}}`
       case 'eq':
-        return `${args[0]} = ${args[1]}`
+        return `${args[0]} == ${args[1]}`
+      case 'neq':
+        return `${args[0]} \\neq ${args[1]}`
+      case 'lt':
+        return `${args[0]} < ${args[1]}`
+      case 'leq':
+        return `${args[0]} \\leq ${args[1]}`
+      case 'gt':
+        return `${args[0]} > ${args[1]}`
+      case 'geq':
+        return `${args[0]} \\geq ${args[1]}`
+      case 'and':
+        return args.join(' \\land ')
+      case 'or':
+        return args.join(' \\lor ')
       case 'power':
-        return `{${args[0]}}^{${args[1]}}`
+        // Look at the original DOM node for the base (the first argument)
+        const baseNode = children[1]
+        const baseString = args[0] || ''
+        const expString = args[1]
+
+        // Check if atomic
+        const isAtomic =
+          baseNode?.localName === 'ci' || (baseNode?.localName === 'cn' && !baseString.trim().startsWith('-'))
+
+        return isAtomic ? `{${baseString}}^{${expString}}` : `\\left({${baseString}}\\right)^{${expString}}`
       case 'root':
+      case 'sqrt':
         return `\\sqrt{${args[0]}}` // simple sqrt
       case 'diff':
         // <diff/> <bvar>t</bvar> V  --> \frac{dV}{dt}
@@ -88,15 +131,24 @@ export class CellMLLatexGenerator {
         return `\\frac{d${depStr}}{d${indepStr}}`
 
       // Trig & Funcs
-      case 'sin':
-      case 'cos':
-      case 'tan':
       case 'exp':
+        return `e^{${args[0]}}`
+      case 'abs':
+        return `\\left|${args[0]}\\right|`
+      case 'cos':
+      case 'cosh':
       case 'log':
       case 'ln':
+      case 'max':
+      case 'min':
+      case 'sin':
+      case 'sinh':
+      case 'tan':
+      case 'tanh':
         return `\\${op}\\left(${args[0]}\\right)`
 
       default:
+        console.log(`Unsupported MathML operator: ${op}`)
         return `\\text{${op}}(${args.join(', ')})`
     }
   }

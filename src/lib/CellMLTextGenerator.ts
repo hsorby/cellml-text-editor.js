@@ -132,14 +132,32 @@ export class CellMLTextGenerator {
     this.append(line)
   }
 
-  // --- MathML Handling (Simplified) ---
+  // --- MathML Handling ---
 
   private processMath(math: Element | null | undefined) {
-    // MathML usually consists of <apply> blocks
-    const children = math?.children || []
-    for (let i = 0; i < children.length; i++) {
-      const expr = this.parseMathNode(children[i])
-      if (expr) this.append(expr + ';')
+    const children = Array.from(math?.children || [])
+
+    for (const child of children) {
+      // Check if the top-level node is an <apply> with an <eq/> operator
+      const isEquation = child.localName === 'apply' && child.firstElementChild?.localName === 'eq'
+
+      if (isEquation) {
+        // --- HANDLING STATEMENTS (Assignments) ---
+        // This handles "a = b" OR "a + b = c" correctly
+        const args = Array.from(child.children).slice(1) // Skip the <eq/> tag
+
+        // Parse Left and Right sides separately
+        const lhs = this.parseMathNode(args[0])
+        const rhs = this.parseMathNode(args[1])
+
+        // Force the single equals sign here
+        this.append(`${lhs} = ${rhs};`)
+      } else {
+        // --- HANDLING NAKED EXPRESSIONS ---
+        // Just in case there is valid MathML that isn't an equation
+        const expr = this.parseMathNode(child)
+        if (expr) this.append(expr + ';')
+      }
     }
   }
 
@@ -192,7 +210,21 @@ export class CellMLTextGenerator {
       case 'divide':
         return `(${args[0]} / ${args[1]})`
       case 'eq':
-        return `${args[0]} = ${args[1]}`
+        return `${args[0]} == ${args[1]}`
+      case 'neq':
+        return `${args[0]} != ${args[1]}`
+      case 'lt':
+        return `${args[0]} < ${args[1]}`
+      case 'leq':
+        return `${args[0]} <= ${args[1]}`
+      case 'gt':
+        return `${args[0]} > ${args[1]}`
+      case 'geq':
+        return `${args[0]} >= ${args[1]}`
+      case 'and':
+        return `${args.join(' and ')}`
+      case 'or':
+        return `${args.join(' or ')}`
       case 'diff':
         // Logic: <diff/> <bvar><ci>t</ci></bvar> <ci>V</ci> -> ode(V, t)
         const bvar = children.find((c) => c.localName === 'bvar')
@@ -209,6 +241,8 @@ export class CellMLTextGenerator {
       case 'ln':
       case 'log':
         return `${op}(${args[0]})`
+      case 'root':
+        return `sqrt(${args[0]})`
 
       default:
         return `${op}(${args.join(', ')})`
