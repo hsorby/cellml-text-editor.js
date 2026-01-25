@@ -38,8 +38,7 @@ export class CellMLLatexGenerator {
     return ''
   }
 
-  private parseIdentifier(name: string): string {
-    // Convert greek words to latex (e.g. "alpha" -> "\alpha")
+  private escapeGreek(text: string): string {
     const greek = [
       'alpha',
       'beta',
@@ -66,16 +65,67 @@ export class CellMLLatexGenerator {
       'psi',
       'omega',
     ]
-    if (greek.includes(name)) return `\\${name}`
+    return greek.includes(text) ? `\\${text}` : text
+  }
 
-    // Subscripts: "V_m" -> "V_{m}"
-    if (name.includes('_')) {
-      const parts = name.split('_')
-      const adjustedName = greek.includes(parts[0] || '') ? `\\${parts[0]}` : parts[0]
-      return `${adjustedName}_{${parts.slice(1).join('_')}}`
+  /**
+   * Specialized identifier formatter.
+   * Format: Base_Sub_Super_SubOfSuper
+   * Example: v_AQ_api_i -> v_{AQ}^{api_{i}}
+   */
+  private parseIdentifier(name: string): string {
+    // 1. Handle simple cases (no underscores)
+    if (!name.includes('_')) {
+      return this.escapeGreek(name)
     }
 
-    return name
+    const parts = name.split('_')
+
+    // Slot 0: Base (e.g. 'v')
+    const base = this.escapeGreek(parts[0])
+
+    // Slot 1: Primary Subscript (e.g. 'AQ')
+    const primarySub = parts[1]
+
+    // Slot 2: Primary Superscript or Subscript of Subscript (e.g. 'api', or 'i')
+    let primarySuper = parts[2]
+
+    // Slot 3: Subscript of the Superscript (e.g. 'i')
+    const subOfSuper = parts[3]
+
+    // Construct the LaTeX
+    let latex = base
+
+    // Apply Slot 1 (Subscript)
+    if (primarySub) {
+      let subBlock = primarySub
+      if (parts.length === 3 && primarySuper.length === 1) {
+        subBlock += `_{${primarySuper}}`
+        primarySuper = ''
+      }
+      latex += `_{${subBlock}}`
+    }
+
+    // Apply Slot 2 (Superscript)
+    if (primarySuper) {
+      let superBlock = primarySuper
+
+      // Apply Slot 3 (Nested Subscript inside the Superscript)
+      if (subOfSuper) {
+        superBlock += `_{${subOfSuper}}`
+      }
+
+      latex += `^{${superBlock}}`
+    }
+
+    // Handle any extra parts (Slot 4+) just in case
+    // We append them to the base subscript to ensure no data is lost
+    if (parts.length > 4) {
+      const remaining = parts.slice(4).join('\\_')
+      latex += `_{${remaining}}`
+    }
+
+    return latex
   }
 
   private parseApply(node: Element | null | undefined): string {
