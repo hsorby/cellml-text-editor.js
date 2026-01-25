@@ -83,12 +83,12 @@ You can configure the parser to tag the output XML with source line numbers. Thi
 ```typescript
 import { CellMLTextParser } from 'cellml-text-editor';
 
-// Default behavior: Adds 'data-source-line' attributes to XML
+// Default behavior: Adds 'data-source-location' attributes to XML
 const parser = new CellMLTextParser();
 
 // Custom behavior: Change the attribute name
 const debugParser = new CellMLTextParser({
-    sourceLineAttribute: 'data-debug-line'
+    sourceLineAttribute: 'data-debug-location'
 });
 
 // Production behavior: Disable source tracking entirely (clean XML)

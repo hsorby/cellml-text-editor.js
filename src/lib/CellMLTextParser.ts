@@ -7,7 +7,7 @@ export interface ParserOptions {
   /**
    * The attribute name used to tag MathML elements with their source line number.
    * Set to null or empty string to disable source tracking in the DOM entirely.
-   * @default "data-source-line"
+   * @default "data-source-location"
    */
   sourceLineAttribute?: string | null
 }
@@ -28,8 +28,8 @@ export class CellMLTextParser {
   private sourceLineAttr: string | null
 
   constructor(options: ParserOptions = {}) {
-    // Default to 'data-source-line' if undefined, but allow null to disable
-    this.sourceLineAttr = options.sourceLineAttribute === undefined ? 'data-source-line' : options.sourceLineAttribute
+    // Default to 'data-source-location' if undefined, but allow null to disable
+    this.sourceLineAttr = options.sourceLineAttribute === undefined ? 'data-source-location' : options.sourceLineAttribute
   }
 
   public parse(text: string): ParserResult {
@@ -172,9 +172,6 @@ export class CellMLTextParser {
     }
 
     const apply = this.doc.createElementNS(MATHML_NS, 'apply')
-    if (this.sourceLineAttr) {
-      apply.setAttribute(this.sourceLineAttr, startLine.toString())
-    }
 
     const eq = this.doc.createElementNS(MATHML_NS, 'eq')
     apply.appendChild(eq)
@@ -185,6 +182,12 @@ export class CellMLTextParser {
     this.expect(TokenType.OpAss)
 
     const rhsNode = this.parseExpression()
+
+    const endLine = this.scanner.getLine();
+
+    if (this.sourceLineAttr) {
+      apply.setAttribute(this.sourceLineAttr, `${startLine.toString()}` + (endLine !== startLine ? `-${endLine.toString()}` : ''))
+    }
 
     apply.appendChild(lhsNode)
     apply.appendChild(rhsNode)

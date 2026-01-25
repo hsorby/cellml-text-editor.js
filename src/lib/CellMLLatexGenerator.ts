@@ -65,7 +65,7 @@ export class CellMLLatexGenerator {
       'psi',
       'omega',
     ]
-    return greek.includes(text) ? `\\${text}` : text
+    return greek.includes(text.toLowerCase()) ? `\\${text}` : text
   }
 
   /**
@@ -90,14 +90,16 @@ export class CellMLLatexGenerator {
 
     let superBlock = ''
     if (parts.length === 3 && parts[2].length === 1) {
-      subParts.push(parts[2])
+      subParts.push(this.escapeGreek(parts[2]))
     } else if (parts[2]) {
-      superBlock = parts[2]
+      superBlock = this.escapeGreek(parts[2])
       if (parts[3]) {
-        superBlock += `_{${parts[3]}}`
+        superBlock += `_{${this.escapeGreek(parts[3])}}`
       }
     }
-
+    subParts.forEach((part, index) => {
+      subParts[index] = this.escapeGreek(part)
+    })
     const subBlock = subParts.join(',')
 
     let latex = base
