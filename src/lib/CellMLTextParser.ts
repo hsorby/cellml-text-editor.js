@@ -477,7 +477,7 @@ export class CellMLTextParser {
 
   private expectValue(type: TokenType): string {
     if (this.scanner.token !== type) {
-      throw new Error(`Expected value of type ${type}, got ${this.scanner.token}`)
+      throw new Error(`Expected value of type ${TokenType[type]}, got ${this.scanner.token}`)
     }
     const val = this.scanner.value
     this.scanner.nextToken()
