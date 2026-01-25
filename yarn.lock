@@ -962,6 +962,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/katex@npm:^0.16.8":
+  version: 0.16.8
+  resolution: "@types/katex@npm:0.16.8"
+  checksum: 10c0/0661609353f4f5e62bd2dc78da99e842761c6474b19f2268b195bbe9dbf20e6f766a31155d79eec2e7c3eff4e7eba4b30f4f519e9c6a11c75bb45e257a2ddb69
+  languageName: node
+  linkType: hard
+
 "@types/node@npm:^24.10.4":
   version: 24.10.9
   resolution: "@types/node@npm:24.10.9"
@@ -1464,6 +1471,7 @@ __metadata:
   resolution: "cellml-text-editor@workspace:."
   dependencies:
     "@tsconfig/node24": "npm:^24.0.3"
+    "@types/katex": "npm:^0.16.8"
     "@types/node": "npm:^24.10.4"
     "@vitejs/plugin-vue": "npm:^6.0.3"
     "@vue/tsconfig": "npm:^0.8.1"
