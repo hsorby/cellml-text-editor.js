@@ -28,6 +28,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-ignore
 import { inject, onMounted, ref, watch } from 'vue'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
@@ -215,7 +216,7 @@ onMounted(async () => {
   console.log(`Loading CellML module: ${currentModule} [${currentIndex}/${Object.keys(cellmlModules).length}]`)
   const cellMLModelString = cellmlModules[currentModule]?.default
   xmlInput.value = updateCellMLModel(cellMLModelString)
-  xmlInput.value = xmlInput2.value
+  // xmlInput.value = xmlInput2.value
   parser.parse(textOutput.value)
   currentDoc = parser['doc']
 })
