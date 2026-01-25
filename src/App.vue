@@ -1,3 +1,32 @@
+<template>
+  <div class="container">
+    <div class="panel">
+      <div v-if="errors.length > 0" class="error-banner">
+        <div v-for="(err, index) in errors" :key="index">
+          <strong>Line {{ err.line }}:</strong> {{ err.message }}
+        </div>
+      </div>
+      <div v-else class="preview-pane" ref="latexContainer"></div>
+
+      <div class="panel">
+        <h3>CellML Text</h3>
+        <textarea
+          v-model="textOutput"
+          class="code-view"
+          @click="onCursorMove"
+          @keyup="onCursorMove"
+          spellcheck="false"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>CellML 2.0 XML</h3>
+      <textarea spellcheck="false">{{ xmlInput }}</textarea>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { inject, onMounted, ref, watch } from 'vue'
 import katex from 'katex'
@@ -11,6 +40,7 @@ import { CellMLLatexGenerator } from './lib/CellMLLatexGenerator'
 import { initLibCellML, updateCellMLModel } from './utils/cellml'
 
 const libcellmlReadyPromise = inject('$libcellml_ready') as Promise<any>
+// @ts-ignore
 const cellmlModules = import.meta.glob('./assets/cellml/*.cellml', {
   query: 'raw',
   eager: true,
@@ -146,35 +176,6 @@ onMounted(async () => {
   currentDoc = parser['doc']
 })
 </script>
-
-<template>
-  <div class="container">
-    <div class="panel">
-      <div v-if="errors.length > 0" class="error-banner">
-        <div v-for="(err, index) in errors" :key="index">
-          <strong>Line {{ err.line }}:</strong> {{ err.message }}
-        </div>
-      </div>
-      <div v-else class="preview-pane" ref="latexContainer"></div>
-
-      <div class="panel">
-        <h3>CellML Text</h3>
-        <textarea
-          v-model="textOutput"
-          class="code-view"
-          @click="onCursorMove"
-          @keyup="onCursorMove"
-          spellcheck="false"
-        ></textarea>
-      </div>
-    </div>
-
-    <div class="panel">
-      <h3>CellML 2.0 XML</h3>
-      <textarea spellcheck="false">{{ xmlInput }}</textarea>
-    </div>
-  </div>
-</template>
 
 <style scoped>
 .container {
