@@ -366,7 +366,7 @@ export class CellMLTextParser {
 
     if (constants.hasOwnProperty(name)) {
       // These are self-closing tags like <pi/>, <exponentiale/>
-      return this.doc.createElementNS(MATHML_NS, constants[name])
+      return this.doc.createElementNS(MATHML_NS, constants[name] || '')
     }
 
     return null
