@@ -134,25 +134,36 @@ const onCursorMove = (e: Event) => {
 const updatePreview = () => {
   if (!currentDoc) return
 
-  // Find the equation that matches this line
-  // We look for elements with 'data-source-line' close to our cursor
-  // (Simple implementation: Exact match or nearest previous match)
+  // Find the equation that matches this line.
+  // We look for elements with 'data-source-location' at our cursor.
   const equations = Array.from(currentDoc.getElementsByTagNameNS('*', 'apply')) // get all apply nodes
 
   // Find the node with the highest line number that is <= cursorLine
   let bestMatch: Element | null = null
-  let maxLine = -1
 
-  equations.forEach((eq) => {
-    const lineAttr = eq.getAttribute('data-source-line')
-    if (lineAttr) {
-      const line = parseInt(lineAttr)
-      if (line === cursorLine.value && line > maxLine) {
-        maxLine = line
-        bestMatch = eq
-      }
+  for (let i = 0; i < equations.length; i++) {
+    const eq = equations[i]
+    if (!eq) continue
+
+    const loc = eq.getAttribute('data-source-location')
+    if (!loc) continue
+
+    // Parse the range.
+    const [startStr, endStr] = loc.split('-')
+    const start = parseInt(startStr || '0', 10)
+    const end = endStr ? parseInt(endStr, 10) : start
+
+    // If we've passed the cursor line, we can stop.
+    if (start > cursorLine.value) {
+      break
     }
-  })
+
+    // Check if the cursor is inside the range.
+    if (cursorLine.value >= start && cursorLine.value <= end) {
+      bestMatch = eq
+      break
+    }
+  }
 
   // Convert to LaTeX.
   if (bestMatch) {
@@ -211,7 +222,7 @@ onMounted(async () => {
   })
   await libcellmlReadyPromise
 
-  const currentIndex = 6
+  const currentIndex = 1
   const currentModule = Object.keys(cellmlModules)[currentIndex] || ''
   console.log(`Loading CellML module: ${currentModule} [${currentIndex}/${Object.keys(cellmlModules).length}]`)
   const cellMLModelString = cellmlModules[currentModule]?.default
