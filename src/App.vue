@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 // @ts-ignore
-import { inject, onMounted, ref, watch } from 'vue'
+import { inject, nextTick, onMounted, ref, watch } from 'vue'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
@@ -193,7 +193,7 @@ watch(textOutput, (newVal) => {
   if (debouncer) clearTimeout(debouncer)
   if (isUpdatingFromXml.value) return
 
-  debouncer = setTimeout(() => {
+  debouncer = setTimeout(async () => {
     try {
       const result = parser.parse(newVal)
 
@@ -204,9 +204,10 @@ watch(textOutput, (newVal) => {
         isUpdatingFromXml.value = true
         xmlInput.value = result.xml
         currentDoc = parser['doc']
-        updatePreview()
         // Reset flag after a tick
         setTimeout(() => (isUpdatingFromXml.value = false), 100)
+        await nextTick()
+        updatePreview()
       }
     } catch (e) {
       // Don't update XML while user is typing invalid syntax
@@ -227,7 +228,7 @@ onMounted(async () => {
   console.log(`Loading CellML module: ${currentModule} [${currentIndex}/${Object.keys(cellmlModules).length}]`)
   const cellMLModelString = cellmlModules[currentModule]?.default
   xmlInput.value = updateCellMLModel(cellMLModelString)
-  xmlInput.value = xmlInput2.value
+  // xmlInput.value = xmlInput2.value
   parser.parse(textOutput.value)
   currentDoc = parser['doc']
 })
