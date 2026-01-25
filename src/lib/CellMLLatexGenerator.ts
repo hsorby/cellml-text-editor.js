@@ -74,55 +74,40 @@ export class CellMLLatexGenerator {
    * Example: v_AQ_api_i -> v_{AQ}^{api_{i}}
    */
   private parseIdentifier(name: string): string {
-    // 1. Handle simple cases (no underscores)
+    // Handle simple cases (no underscores)
     if (!name.includes('_')) {
       return this.escapeGreek(name)
     }
 
     const parts = name.split('_')
 
-    // Slot 0: Base (e.g. 'v')
-    const base = this.escapeGreek(parts[0])
+    // Base (e.g. 'v')
+    const base = this.escapeGreek(parts[0] || '')
 
-    // Slot 1: Primary Subscript (e.g. 'AQ')
-    const primarySub = parts[1]
+    const subParts = []
+    if (parts[1]) subParts.push(parts[1])
+    if (parts.length > 4) subParts.push(...parts.slice(4))
 
-    // Slot 2: Primary Superscript or Subscript of Subscript (e.g. 'api', or 'i')
-    let primarySuper = parts[2]
+    let superBlock = ''
+    if (parts.length === 3 && parts[2].length === 1) {
+      subParts.push(parts[2])
+    } else if (parts[2]) {
+      superBlock = parts[2]
+      if (parts[3]) {
+        superBlock += `_{${parts[3]}}`
+      }
+    }
 
-    // Slot 3: Subscript of the Superscript (e.g. 'i')
-    const subOfSuper = parts[3]
+    const subBlock = subParts.join(',')
 
-    // Construct the LaTeX
     let latex = base
 
-    // Apply Slot 1 (Subscript)
-    if (primarySub) {
-      let subBlock = primarySub
-      if (parts.length === 3 && primarySuper.length === 1) {
-        subBlock += `_{${primarySuper}}`
-        primarySuper = ''
-      }
+    if (subBlock) {
       latex += `_{${subBlock}}`
     }
 
-    // Apply Slot 2 (Superscript)
-    if (primarySuper) {
-      let superBlock = primarySuper
-
-      // Apply Slot 3 (Nested Subscript inside the Superscript)
-      if (subOfSuper) {
-        superBlock += `_{${subOfSuper}}`
-      }
-
+    if (superBlock) {
       latex += `^{${superBlock}}`
-    }
-
-    // Handle any extra parts (Slot 4+) just in case
-    // We append them to the base subscript to ensure no data is lost
-    if (parts.length > 4) {
-      const remaining = parts.slice(4).join('\\_')
-      latex += `_{${remaining}}`
     }
 
     return latex
