@@ -64,6 +64,49 @@ const xmlInput = ref(`<?xml version="1.0" encoding="UTF-8"?>
   </component>
 </model>`)
 
+const xmlInput2 = ref(`
+  <model xmlns="http://www.cellml.org/cellml/2.0#"  name="example_model">
+  <component name="example_component">
+    <variable name="q_K" units="coulomb" interface="public"/>
+    <variable name="q_V" units="coulomb" interface="public"/>
+    <variable name="t" units="second" interface="public"/>
+    <variable name="v_NKE_K_i" units="coulomb_per_second" interface="private"/>
+    <variable name="v_Kir_i" units="coulomb_per_second" interface="private"/>
+    <variable name="v_AQ_api_i" units="coulomb_per_second" interface="private"/>
+    <variable name="v_AQ_bas_i" units="coulomb_per_second" interface="private"/>
+    <math xmlns="http://www.w3.org/1998/Math/MathML" xmlns:cellml="http://www.cellml.org/cellml/2.0#">
+<apply>
+        <eq/>
+        <apply>
+          <diff/>
+          <bvar>
+            <ci>t</ci>
+          </bvar>
+          <ci>q_K</ci>
+        </apply>
+        <apply>
+          <plus/>
+          <ci>v_NKE_K_i</ci>
+          <ci>v_Kir_i</ci>
+        </apply>
+      </apply>
+      <apply>
+        <eq/>
+        <apply>
+          <diff/>
+          <bvar>
+            <ci>t</ci>
+          </bvar>
+          <ci>q_V</ci>
+        </apply>
+        <apply>
+          <plus/>
+          <ci>v_AQ_api_i</ci>
+          <ci>v_AQ_bas_i</ci>
+        </apply>
+      </apply> </math>  </component></model>
+`)
+
 const textOutput = ref('')
 
 const generator = new CellMLTextGenerator()
@@ -167,11 +210,12 @@ onMounted(async () => {
   })
   await libcellmlReadyPromise
 
-  const currentIndex = 5
+  const currentIndex = 6
   const currentModule = Object.keys(cellmlModules)[currentIndex] || ''
   console.log(`Loading CellML module: ${currentModule} [${currentIndex}/${Object.keys(cellmlModules).length}]`)
   const cellMLModelString = cellmlModules[currentModule]?.default
   xmlInput.value = updateCellMLModel(cellMLModelString)
+  xmlInput.value = xmlInput2.value
   parser.parse(textOutput.value)
   currentDoc = parser['doc']
 })
