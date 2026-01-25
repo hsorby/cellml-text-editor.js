@@ -227,7 +227,7 @@ onMounted(async () => {
   console.log(`Loading CellML module: ${currentModule} [${currentIndex}/${Object.keys(cellmlModules).length}]`)
   const cellMLModelString = cellmlModules[currentModule]?.default
   xmlInput.value = updateCellMLModel(cellMLModelString)
-  // xmlInput.value = xmlInput2.value
+  xmlInput.value = xmlInput2.value
   parser.parse(textOutput.value)
   currentDoc = parser['doc']
 })

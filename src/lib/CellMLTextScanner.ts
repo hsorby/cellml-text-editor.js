@@ -1,4 +1,5 @@
 export enum TokenType {
+  Unknown,
   EOF,
   Identifier, // my_var
   Number, // 10.5
@@ -17,8 +18,10 @@ export enum TokenType {
   KwOtherwise,
   KwEndSel,
 
-  // Symbols
+  // Assignment
   OpAss, // =
+
+  // Symbols
   OpPlus, // +
   OpMinus, // -
   OpTimes, // *
@@ -132,7 +135,8 @@ export class CellMLTextScanner {
         } else {
           // CellML usually doesn't use '!' alone, but good to handle safely
           console.warn(`Unexpected character '!' at pos ${this.pos}`)
-          this.nextToken()
+          this.currentToken = TokenType.Unknown
+          // this.nextToken() // Don't recurse.
         }
         break
       case '<':
@@ -189,7 +193,8 @@ export class CellMLTextScanner {
         break
       default:
         console.warn('Unknown char:', char)
-        this.nextToken() // Skip unknown
+        this.currentToken = TokenType.Unknown
+      // this.nextToken() // Don't recurse.
     }
   }
 

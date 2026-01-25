@@ -29,7 +29,8 @@ export class CellMLTextParser {
 
   constructor(options: ParserOptions = {}) {
     // Default to 'data-source-location' if undefined, but allow null to disable
-    this.sourceLineAttr = options.sourceLineAttribute === undefined ? 'data-source-location' : options.sourceLineAttribute
+    this.sourceLineAttr =
+      options.sourceLineAttribute === undefined ? 'data-source-location' : options.sourceLineAttribute
   }
 
   public parse(text: string): ParserResult {
@@ -92,7 +93,7 @@ export class CellMLTextParser {
     comp.setAttribute('name', name)
     parent.appendChild(comp)
 
-    while (this.scanner.token !== TokenType.KwEndDef) {
+    while (this.scanner.token !== TokenType.KwEndDef && this.scanner.token !== TokenType.EOF) {
       if (this.scanner.token === TokenType.KwVar) {
         this.parseVariable(comp)
       } else if (this.scanner.token === TokenType.Identifier || this.scanner.token === TokenType.KwSel) {
@@ -153,8 +154,10 @@ export class CellMLTextParser {
     // Basic placeholder - logic is similar to var
     this.expect(TokenType.KwUnit)
     // ... implementation similar to comp/var ...
-    // Consume until enddef
-    while (this.scanner.token !== TokenType.KwEndDef && this.scanner.token !== TokenType.EOF) this.scanner.nextToken()
+    // Consume until enddef or EOF.
+    while (this.scanner.token !== TokenType.KwEndDef && this.scanner.token !== TokenType.EOF) {
+      this.scanner.nextToken()
+    }
     this.expect(TokenType.KwEndDef)
     this.expect(TokenType.SemiColon)
   }
@@ -183,10 +186,13 @@ export class CellMLTextParser {
 
     const rhsNode = this.parseExpression()
 
-    const endLine = this.scanner.getLine();
+    const endLine = this.scanner.getLine()
 
     if (this.sourceLineAttr) {
-      apply.setAttribute(this.sourceLineAttr, `${startLine.toString()}` + (endLine !== startLine ? `-${endLine.toString()}` : ''))
+      apply.setAttribute(
+        this.sourceLineAttr,
+        `${startLine.toString()}` + (endLine !== startLine ? `-${endLine.toString()}` : '')
+      )
     }
 
     apply.appendChild(lhsNode)
@@ -357,7 +363,12 @@ export class CellMLTextParser {
           cn.setAttributeNS(CELLML_NS, 'cellml:units', uVal)
         }
         // consume rest of brace content if any
-        while ((this.scanner.token as TokenType) !== TokenType.RBrace) this.scanner.nextToken()
+        while (
+          (this.scanner.token as TokenType) !== TokenType.RBrace &&
+          (this.scanner.token as TokenType) !== TokenType.EOF
+        ) {
+          this.scanner.nextToken()
+        }
         this.expect(TokenType.RBrace)
       }
       return cn
