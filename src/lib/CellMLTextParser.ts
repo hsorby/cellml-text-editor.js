@@ -292,6 +292,19 @@ export class CellMLTextParser {
     return left
   }
 
+  /**
+   * Checks if an element is an <apply> block for a specific operator.
+   * e.g. isMathMLApply(node, 'plus') returns true for <apply><plus/>...</apply>
+   */
+  private isMathMLApply(node: Element, operatorName: string): boolean {
+    // 1. Must be an <apply> tag
+    if (node.localName !== 'apply') return false
+
+    // 2. The first child must be the operator tag (e.g. <plus/>)
+    const op = node.firstElementChild
+    return op ? op.localName === operatorName : false
+  }
+
   private parseExpression(): Element {
     let left = this.parseTerm()
 
@@ -300,12 +313,16 @@ export class CellMLTextParser {
       this.scanner.nextToken()
       const right = this.parseTerm()
 
-      const apply = this.doc.createElementNS(MATHML_NS, 'apply')
-      const opNode = this.doc.createElementNS(MATHML_NS, op === TokenType.OpPlus ? 'plus' : 'minus')
-      apply.appendChild(opNode)
-      apply.appendChild(left)
-      apply.appendChild(right)
-      left = apply
+      if (op === TokenType.OpPlus && this.isMathMLApply(left, 'plus')) {
+        left.appendChild(right)
+      } else {
+        const apply = this.doc.createElementNS(MATHML_NS, 'apply')
+        const opNode = this.doc.createElementNS(MATHML_NS, op === TokenType.OpPlus ? 'plus' : 'minus')
+        apply.appendChild(opNode)
+        apply.appendChild(left)
+        apply.appendChild(right)
+        left = apply
+      }
     }
     return left
   }
@@ -317,15 +334,42 @@ export class CellMLTextParser {
       const op = this.scanner.token
       this.scanner.nextToken()
       const right = this.parseFactor()
-
-      const apply = this.doc.createElementNS(MATHML_NS, 'apply')
-      const opNode = this.doc.createElementNS(MATHML_NS, op === TokenType.OpTimes ? 'times' : 'divide')
-      apply.appendChild(opNode)
-      apply.appendChild(left)
-      apply.appendChild(right)
-      left = apply
+      if (op === TokenType.OpTimes && this.isMathMLApply(left, 'times')) {
+        left.appendChild(right)
+      } else {
+        const apply = this.doc.createElementNS(MATHML_NS, 'apply')
+        const opNode = this.doc.createElementNS(MATHML_NS, op === TokenType.OpTimes ? 'times' : 'divide')
+        apply.appendChild(opNode)
+        apply.appendChild(left)
+        apply.appendChild(right)
+        left = apply
+      }
     }
     return left
+  }
+
+  /**
+   * Checks if the identifier is a reserved MathML constant name
+   * and returns the corresponding element, or null if it's a variable.
+   */
+  private createMathMLConstant(name: string): Element | null {
+    // Map of "User Text" -> "MathML Tag Name"
+    const constants: Record<string, string> = {
+      pi: 'pi',
+      e: 'exponentiale', // Standard math constant e
+      inf: 'infinity', // Common abbreviation
+      infinity: 'infinity',
+      NaN: 'notanumber',
+      true: 'true', // Boolean constants
+      false: 'false',
+    }
+
+    if (constants.hasOwnProperty(name)) {
+      // These are self-closing tags like <pi/>, <exponentiale/>
+      return this.doc.createElementNS(MATHML_NS, constants[name])
+    }
+
+    return null
   }
 
   private parseFactor(): Element {
@@ -379,6 +423,12 @@ export class CellMLTextParser {
       // Check if function call: ode(a, b) or sin(x).
       if ((this.scanner.token as TokenType) === TokenType.LParam) {
         return this.parseFunctionCall(name)
+      }
+
+      // Check if it is a known MathML constant (pi, e, inf, etc.)
+      const constantNode = this.createMathMLConstant(name)
+      if (constantNode) {
+        return constantNode
       }
 
       const ci = this.doc.createElementNS(MATHML_NS, 'ci')
@@ -500,8 +550,18 @@ export class CellMLTextParser {
     const tagName = node.tagName // will include prefix if set
     const localName = node.localName
 
-    // Build Attributes String.
+    // Explicitly add xmlns if this is a CellML model or MathML block
+    // and the attribute wasn't manually set already.
     let props = ''
+    if (localName === 'model' && !node.hasAttribute('xmlns')) {
+      props += ` xmlns="${CELLML_NS}"`
+    }
+
+    if (localName === 'math' && !node.hasAttribute('xmlns')) {
+      props += ` xmlns="${MATHML_NS}" xmlns:cellml="${CELLML_NS}"`
+    }
+
+    // Build Attributes String.
     for (let i = 0; i < node.attributes.length; i++) {
       const attr = node.attributes[i]
       if (attr) {
@@ -510,16 +570,6 @@ export class CellMLTextParser {
         }
         props += ` ${attr.name}="${attr.value}"`
       }
-    }
-
-    // Explicitly add xmlns if this is a CellML model or MathML block
-    // and the attribute wasn't manually set already.
-    if (localName === 'model' && !node.hasAttribute('xmlns')) {
-      props += ` xmlns="${CELLML_NS}"`
-    }
-
-    if (localName === 'math' && !node.hasAttribute('xmlns')) {
-      props += ` xmlns="${MATHML_NS}" xmlns:cellml="${CELLML_NS}"`
     }
 
     // Determine if we have children.
