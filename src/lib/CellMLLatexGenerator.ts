@@ -172,8 +172,13 @@ export class CellMLLatexGenerator {
         return `e^{${args[0]}}`
       case 'abs':
         return `\\left|${args[0]}\\right|`
+      case 'floor':
+        return `\\lfloor ${args[0]} \\rfloor`
+      case 'ceil':
+        return `\\lceil ${args[0]} \\rceil`
       case 'cos':
       case 'cosh':
+      case 'log10':
       case 'log':
       case 'ln':
       case 'max':
