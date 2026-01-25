@@ -89,8 +89,8 @@ export class CellMLLatexGenerator {
     if (parts.length > 4) subParts.push(...parts.slice(4))
 
     let superBlock = ''
-    if (parts.length === 3 && parts[2].length === 1) {
-      subParts.push(this.escapeGreek(parts[2]))
+    if (parts.length === 3 && (parts[2] || []).length === 1) {
+      subParts.push(this.escapeGreek(parts[2] || ''))
     } else if (parts[2]) {
       superBlock = this.escapeGreek(parts[2])
       if (parts[3]) {
