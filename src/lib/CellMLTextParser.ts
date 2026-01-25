@@ -484,8 +484,9 @@ export class CellMLTextParser {
   private serialize(node: Element, level: number = 0): string {
     const indent = '  '.repeat(level)
     const tagName = node.tagName // will include prefix if set
+    const localName = node.localName
 
-    // 1. Build Attributes String
+    // Build Attributes String.
     let props = ''
     for (let i = 0; i < node.attributes.length; i++) {
       const attr = node.attributes[i]
@@ -497,28 +498,38 @@ export class CellMLTextParser {
       }
     }
 
-    // 2. Determine if we have children
+    // Explicitly add xmlns if this is a CellML model or MathML block
+    // and the attribute wasn't manually set already.
+    if (localName === 'model' && !node.hasAttribute('xmlns')) {
+      props += ` xmlns="${CELLML_NS}"`
+    }
+
+    if (localName === 'math' && !node.hasAttribute('xmlns')) {
+      props += ` xmlns="${MATHML_NS}" xmlns:cellml="${CELLML_NS}"`
+    }
+
+    // Determine if we have children.
     const children = Array.from(node.childNodes)
     const hasElementChildren = children.some((c) => c.nodeType === 1) // 1 = Element
     const textContent = node.textContent?.trim()
 
-    // 3. Self-closing tag (e.g. <diff/>)
+    // Self-closing tag (e.g. <diff/>).
     if (children.length === 0 && !textContent) {
       return `${indent}<${tagName}${props}/>`
     }
 
-    // 4. Node with text only (e.g. <cn>10</cn> or <ci>x</ci>)
+    // Node with text only (e.g. <cn>10</cn> or <ci>x</ci>).
     // We print this on a single line to preserve MathML readability
     if (!hasElementChildren) {
       return `${indent}<${tagName}${props}>${textContent}</${tagName}>`
     }
 
-    // 5. Node with nested elements (e.g. <apply>, <component>)
+    // Node with nested elements (e.g. <apply>, <component>).
     let output = `${indent}<${tagName}${props}>\n`
 
     children.forEach((child) => {
       if (child.nodeType === 1) {
-        // Recursively serialize elements
+        // Recursively serialize elements.
         output += this.serialize(child as Element, level + 1) + '\n'
       }
     })
