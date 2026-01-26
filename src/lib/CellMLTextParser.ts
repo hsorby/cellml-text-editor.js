@@ -545,6 +545,52 @@ export class CellMLTextParser {
     return val
   }
 
+  /**
+   * Checks if the element or any of its descendants use a CellML attribute
+   * (e.g. cellml:units).
+   */
+  private usesCellMLNamespace(root: Element): boolean {
+    // 1. Check the descendants
+    const descendants = root.getElementsByTagName('*')
+    for (let i = 0; i < descendants.length; i++) {
+      const el = descendants[i]
+      for (let j = 0; el && j < el.attributes.length; j++) {
+        const attr = el.attributes[j]
+        // Check by Namespace URI.
+        if (attr && attr.namespaceURI === CELLML_NS) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  /**
+   * Checks if a specific Namespace URI is declared on this node
+   * and returns the prefix used (e.g. 'cellml', 'cellml2', or '' for default).
+   * Returns null if not found.
+   */
+  private getPrefixForNamespace(node: Element, namespaceUri: string): string | null {
+    const XMLNS_URI = 'http://www.w3.org/2000/xmlns/'
+
+    for (let i = 0; i < node.attributes.length; i++) {
+      const attr = node.attributes[i]
+      if (!attr) continue
+
+      // Check if this attribute is a namespace declaration
+      if (attr.namespaceURI === XMLNS_URI) {
+        // Check if it points to the target Namespace URI
+        if (attr.value === namespaceUri) {
+          // attr.localName is the prefix (e.g. 'cellml' in xmlns:cellml)
+          // If localName is 'xmlns', it means it's the default namespace (prefix is empty)
+          return attr.localName === 'xmlns' ? '' : attr.localName
+        }
+      }
+    }
+
+    return null
+  }
+
   private serialize(node: Element, level: number = 0): string {
     const indent = '  '.repeat(level)
     const tagName = node.tagName // will include prefix if set
@@ -558,7 +604,13 @@ export class CellMLTextParser {
     }
 
     if (localName === 'math' && !node.hasAttribute('xmlns')) {
-      props += ` xmlns="${MATHML_NS}" xmlns:cellml="${CELLML_NS}"`
+      props += ` xmlns="${MATHML_NS}"`
+      if (this.usesCellMLNamespace(node) && !node.hasAttribute('xmlns:cellml')) {
+        const existingPrefix = this.getPrefixForNamespace(node, CELLML_NS)
+        if (existingPrefix === null) {
+          props += ` xmlns:cellml="${CELLML_NS}"`
+        }
+      }
     }
 
     // Build Attributes String.
