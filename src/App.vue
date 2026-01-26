@@ -104,6 +104,7 @@ const xmlInput2 = ref(`
           <plus/>
           <ci>v_AQ_api_i</ci>
           <ci>v_AQ_bas_i</ci>
+          <pi />
         </apply>
       </apply> </math>  </component></model>
 `)

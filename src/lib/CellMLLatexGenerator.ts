@@ -26,6 +26,11 @@ export class CellMLLatexGenerator {
     return this.parseNode(mathMLNode)
   }
 
+  private ignoreTag(tag: string): Boolean {
+    const ignoreNodes = ['bvar']
+    return ignoreNodes.includes(tag)
+  }
+
   private parseNode(node: Element | null | undefined): string {
     if (!node) return ''
     const tag = node.localName
@@ -34,7 +39,10 @@ export class CellMLLatexGenerator {
     if (tag === 'ci') return this.parseIdentifier(node.textContent || '')
     if (tag === 'cn') return node.textContent || '0'
     if (tag === 'piecewise') return this.parsePiecewise(node)
+    if (tag === 'pi') return '\\pi'
+    if (this.ignoreTag(tag)) return ''
 
+    console.warn(`Unsupported MathML node: ${tag}`)
     return ''
   }
 
