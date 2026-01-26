@@ -66,7 +66,7 @@ const xmlInput = ref(`<?xml version="1.0" encoding="UTF-8"?>
 </model>`)
 
 const xmlInput2 = ref(`
-  <model xmlns="http://www.cellml.org/cellml/2.0#"  name="example_model">
+<model xmlns="http://www.cellml.org/cellml/2.0#"  name="example_model">
   <component name="example_component">
     <variable name="q_K" units="coulomb" interface="public"/>
     <variable name="q_V" units="coulomb" interface="public"/>
@@ -76,7 +76,7 @@ const xmlInput2 = ref(`
     <variable name="v_AQ_api_i" units="coulomb_per_second" interface="private"/>
     <variable name="v_AQ_bas_i" units="coulomb_per_second" interface="private"/>
     <math xmlns="http://www.w3.org/1998/Math/MathML" xmlns:cellml="http://www.cellml.org/cellml/2.0#">
-<apply>
+      <apply>
         <eq/>
         <apply>
           <diff/>
@@ -106,7 +106,29 @@ const xmlInput2 = ref(`
           <ci>v_AQ_bas_i</ci>
           <pi />
         </apply>
-      </apply> </math>  </component></model>
+      </apply>
+      <apply>
+        <eq/>
+        <ci>u</ci>
+        <apply>
+          <plus/>
+          <ci>u_0</ci>
+          <ci>u_C</ci>
+          <ci>u_ext</ci>
+          <apply>
+            <times/>
+            <ci>R_v</ci>
+            <apply>
+              <minus/>
+              <ci>v</ci>
+              <ci>v_out</ci>
+            </apply>
+          </apply>
+        </apply>
+      </apply>
+    </math>
+  </component>
+</model>
 `)
 
 const textOutput = ref('')
@@ -229,7 +251,7 @@ onMounted(async () => {
   console.log(`Loading CellML module: ${currentModule} [${currentIndex}/${Object.keys(cellmlModules).length}]`)
   const cellMLModelString = cellmlModules[currentModule]?.default
   xmlInput.value = updateCellMLModel(cellMLModelString)
-  // xmlInput.value = xmlInput2.value
+  xmlInput.value = xmlInput2.value
   parser.parse(textOutput.value)
   currentDoc = parser['doc']
 })

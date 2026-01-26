@@ -1,3 +1,15 @@
+const PRECEDENCE: Record<string, number> = {
+  atomic: 100, // Identifiers, numbers
+  func: 90, // sin, cos, exp (visually self-contained)
+  power: 80, // ^
+  times: 70, // *
+  divide: 70, // / (usually self-contained in \frac, but good to have)
+  plus: 60, // +
+  minus: 60, // -
+  rel: 50, // =, <, >
+  unknown: 0,
+}
+
 export class CellMLLatexGenerator {
   public convert(mathMLNode: Element): string {
     if (!mathMLNode) return ''
@@ -31,11 +43,11 @@ export class CellMLLatexGenerator {
     return ignoreNodes.includes(tag)
   }
 
-  private parseNode(node: Element | null | undefined): string {
+  private parseNode(node: Element | null | undefined, contextPrecedence: number = 0): string {
     if (!node) return ''
     const tag = node.localName
 
-    if (tag === 'apply') return this.parseApply(node)
+    if (tag === 'apply') return this.parseApply(node, contextPrecedence)
     if (tag === 'ci') return this.parseIdentifier(node.textContent || '')
     if (tag === 'cn') return node.textContent || '0'
     if (tag === 'piecewise') return this.parsePiecewise(node)
@@ -123,36 +135,60 @@ export class CellMLLatexGenerator {
     return latex
   }
 
-  private parseApply(node: Element | null | undefined): string {
+  private parseApply(node: Element | null | undefined, parentPrecedence: number): string {
     const children = Array.from(node?.children || [])
-    const op = children[0]?.localName
-    const args = children.slice(1).map((c) => this.parseNode(c))
+    const op = children[0]?.localName || 'unknown'
+    const myPrecedence = PRECEDENCE[op] || PRECEDENCE.func!
+    const args = children.slice(1).map((c, index) => {
+      let childExpectedPrec = myPrecedence
+      // Special cases for child precedence.
+      if (['divide', 'diff', 'root', 'sqrt', 'sin', 'cos', 'tan', 'exp', 'ln', 'log'].includes(op)) {
+        childExpectedPrec = 0
+      } else if (op === 'minus' && index === 1) {
+        // Right operand of subtraction.
+        childExpectedPrec = myPrecedence + 1
+      }
+      return this.parseNode(c, childExpectedPrec)
+    })
 
+    let latex = ''
     switch (op) {
       case 'plus':
-        return args.join(' + ')
+        latex = args.join(' + ')
+        break
       case 'minus':
-        return args.length === 1 ? `-${args[0]}` : `${args[0]} - ${args[1]}`
+        latex = args.length === 1 ? `-${args[0]}` : `${args[0]} - ${args[1]}`
+        break
       case 'times':
-        return args.join(' \\cdot ')
+        latex = args.join(' \\cdot ')
+        break
       case 'divide':
-        return `\\frac{${args[0]}}{${args[1]}}`
+        latex = `\\frac{${args[0]}}{${args[1]}}`
+        break
       case 'eq':
-        return `${args[0]} == ${args[1]}`
+        latex = `${args[0]} == ${args[1]}`
+        break
       case 'neq':
-        return `${args[0]} \\neq ${args[1]}`
+        latex = `${args[0]} \\neq ${args[1]}`
+        break
       case 'lt':
-        return `${args[0]} < ${args[1]}`
+        latex = `${args[0]} < ${args[1]}`
+        break
       case 'leq':
-        return `${args[0]} \\leq ${args[1]}`
+        latex = `${args[0]} \\leq ${args[1]}`
+        break
       case 'gt':
-        return `${args[0]} > ${args[1]}`
+        latex = `${args[0]} > ${args[1]}`
+        break
       case 'geq':
-        return `${args[0]} \\geq ${args[1]}`
+        latex = `${args[0]} \\geq ${args[1]}`
+        break
       case 'and':
-        return args.join(' \\land ')
+        latex = args.join(' \\land ')
+        break
       case 'or':
-        return args.join(' \\lor ')
+        latex = args.join(' \\lor ')
+        break
       case 'power':
         // Look at the original DOM node for the base (the first argument)
         const baseNode = children[1]
@@ -163,27 +199,33 @@ export class CellMLLatexGenerator {
         const isAtomic =
           baseNode?.localName === 'ci' || (baseNode?.localName === 'cn' && !baseString.trim().startsWith('-'))
 
-        return isAtomic ? `{${baseString}}^{${expString}}` : `\\left({${baseString}}\\right)^{${expString}}`
+        latex = isAtomic ? `{${baseString}}^{${expString}}` : `\\left({${baseString}}\\right)^{${expString}}`
+        break
       case 'root':
       case 'sqrt':
-        return `\\sqrt{${args[0]}}` // simple sqrt
+        latex = `\\sqrt{${args[0]}}` // simple sqrt
+        break
       case 'diff':
         // <diff/> <bvar>t</bvar> V  --> \frac{dV}{dt}
         const bvar = children.find((c) => c.localName === 'bvar')
         const dep = children.find((c) => c.localName !== 'diff' && c.localName !== 'bvar')
         const indepStr = bvar ? this.parseNode(bvar.firstElementChild as Element) : 'x'
         const depStr = dep ? this.parseNode(dep) : 'y'
-        return `\\frac{d${depStr}}{d${indepStr}}`
-
+        latex = `\\frac{d${depStr}}{d${indepStr}}`
+        break
       // Trig & Funcs
       case 'exp':
-        return `e^{${args[0]}}`
+        latex = `e^{${args[0]}}`
+        break
       case 'abs':
-        return `\\left|${args[0]}\\right|`
+        latex = `\\left|${args[0]}\\right|`
+        break
       case 'floor':
-        return `\\lfloor ${args[0]} \\rfloor`
+        latex = `\\lfloor ${args[0]} \\rfloor`
+        break
       case 'ceil':
-        return `\\lceil ${args[0]} \\rceil`
+        latex = `\\lceil ${args[0]} \\rceil`
+        break
       case 'cos':
       case 'cosh':
       case 'log10':
@@ -195,12 +237,20 @@ export class CellMLLatexGenerator {
       case 'sinh':
       case 'tan':
       case 'tanh':
-        return `\\${op}\\left(${args[0]}\\right)`
+        latex = `\\${op}\\left(${args[0]}\\right)`
+        break
 
       default:
         console.log(`Unsupported MathML operator: ${op}`)
-        return `\\text{${op}}(${args.join(', ')})`
+        latex = `\\text{${op}}(${args.join(', ')})`
+        break
     }
+
+    if (myPrecedence < parentPrecedence) {
+      latex = `\\left(${latex}\\right)`
+    }
+
+    return latex
   }
 
   private parsePiecewise(node: Element): string {
