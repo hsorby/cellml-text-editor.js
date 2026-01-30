@@ -419,9 +419,9 @@ export class CellMLTextParser {
         cn.setAttribute('type', 'e-notation')
         const sep = this.doc.createElementNS(MATHML_NS, 'sep')
         const [mantissa, exponent] = val.split(/[eE]/)
-        cn.appendChild(this.doc.createTextNode(mantissa))
+        cn.appendChild(this.doc.createTextNode(mantissa || '1'))
         cn.appendChild(sep)
-        cn.appendChild(this.doc.createTextNode(exponent))
+        cn.appendChild(this.doc.createTextNode(exponent || '0'))
       } else {
         cn.textContent = val
       }
@@ -649,7 +649,7 @@ export class CellMLTextParser {
     if (!hasElementChildren) {
       return `${indent}<${tagName}${props}>${textContent}</${tagName}>`
     } else if (node.tagName === 'cn' && children.length === 3) {
-      return `${indent}<${tagName}${props}>${children[0].textContent}<sep/>${children[2].textContent}</${tagName}>`
+      return `${indent}<${tagName}${props}>${children[0]?.textContent}<sep/>${children[2]?.textContent}</${tagName}>`
     }
 
     // Node with nested elements (e.g. <apply>, <component>).
