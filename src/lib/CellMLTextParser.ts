@@ -395,7 +395,6 @@ export class CellMLTextParser {
       const val = this.scanner.value
       this.scanner.nextToken()
       const cn = this.doc.createElementNS(MATHML_NS, 'cn')
-      cn.textContent = val
 
       // Check for {units: ...} attached to number.
       if ((this.scanner.token as TokenType) === TokenType.LBrace) {
@@ -414,6 +413,17 @@ export class CellMLTextParser {
           this.scanner.nextToken()
         }
         this.expect(TokenType.RBrace)
+      }
+
+      if (val.match(/^-?[\d.]+[eE][+-]?\d+$/)) {
+        cn.setAttribute('type', 'e-notation')
+        const sep = this.doc.createElementNS(MATHML_NS, 'sep')
+        const [mantissa, exponent] = val.split(/[eE]/)
+        cn.appendChild(this.doc.createTextNode(mantissa))
+        cn.appendChild(sep)
+        cn.appendChild(this.doc.createTextNode(exponent))
+      } else {
+        cn.textContent = val
       }
       return cn
     } else if (this.scanner.token === TokenType.Identifier) {
@@ -635,9 +645,11 @@ export class CellMLTextParser {
     }
 
     // Node with text only (e.g. <cn>10</cn> or <ci>x</ci>).
-    // We print this on a single line to preserve MathML readability
+    // We print this on a single line to preserve MathML readability.
     if (!hasElementChildren) {
       return `${indent}<${tagName}${props}>${textContent}</${tagName}>`
+    } else if (node.tagName === 'cn' && children.length === 3) {
+      return `${indent}<${tagName}${props}>${children[0].textContent}<sep/>${children[2].textContent}</${tagName}>`
     }
 
     // Node with nested elements (e.g. <apply>, <component>).
