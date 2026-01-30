@@ -65,7 +65,7 @@ const xmlInput = ref(`<?xml version="1.0" encoding="UTF-8"?>
   </component>
 </model>`)
 
-const xmlInput2 = ref(`
+const testXmlInput02 = `
 <model xmlns="http://www.cellml.org/cellml/2.0#"  name="example_model">
   <component name="example_component">
     <variable name="q_K" units="coulomb" interface="public"/>
@@ -129,7 +129,50 @@ const xmlInput2 = ref(`
     </math>
   </component>
 </model>
-`)
+`
+
+const testXmlInput03 = `
+<model xmlns="http://www.cellml.org/cellml/2.0#"  name="example_model">
+  <component name="example_component">
+    <variable name="i_M" units="picoA" interface="public"/>
+    <variable name="j_KM" units="nanoA_per_farad" interface="public"/>
+    <variable name="F" units="farad" interface="public"/>
+    <math xmlns="http://www.w3.org/1998/Math/MathML" xmlns:cellml="http://www.cellml.org/cellml/2.0#">
+ <apply>
+        <eq/>
+        <ci>j_KM</ci>
+        <apply>
+          <times/>
+          <apply>
+            <divide/>
+            <apply>
+              <minus/>
+              <ci>i_M</ci>
+            </apply>
+            <ci>F</ci>
+          </apply>
+          <cn cellml:units="A_per_nanoA">1e-9</cn>
+        </apply>
+      </apply>
+ <apply>
+        <eq/>
+        <ci>j_KM</ci>
+        <apply>
+          <times/>
+          <apply>
+            <divide/>
+            <apply>
+              <minus/>
+              <ci>i_M</ci>
+            </apply>
+            <ci>F</ci>
+          </apply>
+          <cn cellml:units="A_per_nanoA" type="e-notation">1<sep/>-9</cn>
+        </apply>
+      </apply>
+    </math>
+  </component>
+</model>`
 
 const textOutput = ref('')
 
@@ -239,6 +282,14 @@ watch(textOutput, (newVal) => {
   }, 750)
 })
 
+function listAvailableModules() {
+  console.log('Available CellML modules:')
+  let index = 0
+  Object.keys(cellmlModules).forEach((key) => {
+    console.log(`[${index++}] - ${key}`)
+  })
+}
+
 onMounted(async () => {
   // Load a sample CellML file from assets on startup
   libcellmlReadyPromise.then((instance) => {
@@ -246,12 +297,14 @@ onMounted(async () => {
   })
   await libcellmlReadyPromise
 
-  const currentIndex = 1
+  listAvailableModules()
+
+  const currentIndex = 23
   const currentModule = Object.keys(cellmlModules)[currentIndex] || ''
   console.log(`Loading CellML module: ${currentModule} [${currentIndex}/${Object.keys(cellmlModules).length}]`)
   const cellMLModelString = cellmlModules[currentModule]?.default
   xmlInput.value = updateCellMLModel(cellMLModelString)
-  xmlInput.value = xmlInput2.value
+  xmlInput.value = testXmlInput03
   parser.parse(textOutput.value)
   currentDoc = parser['doc']
 })

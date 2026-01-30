@@ -49,7 +49,35 @@ export class CellMLLatexGenerator {
 
     if (tag === 'apply') return this.parseApply(node, contextPrecedence)
     if (tag === 'ci') return this.parseIdentifier(node.textContent || '')
-    if (tag === 'cn') return node.textContent || '0'
+    if (tag === 'cn') {
+      const type = node.getAttribute('type')
+      if (type === 'e-notation') {
+        const children = Array.from(node.childNodes)
+        const sepIndex = children.findIndex((c) => c.nodeType === 1 && (c as Element).localName === 'sep')
+
+        if (sepIndex !== -1) {
+          const mantissa = children
+            .slice(0, sepIndex)
+            .map((c) => c.textContent)
+            .join('')
+            .trim()
+          const exponent = children
+            .slice(sepIndex + 1)
+            .map((c) => c.textContent)
+            .join('')
+            .trim()
+
+          return `${mantissa} \\times 10^{${exponent}}`
+        }
+      }
+
+      const text = node.textContent?.trim() || '0'
+      if (text.match(/^-?[\d.]+[eE][+-]?\d+$/)) {
+        const [mant, exp] = text.split(/[eE]/)
+        return `${mant} \\times 10^{${exp}}`
+      }
+      return text
+    }
     if (tag === 'piecewise') return this.parsePiecewise(node)
     if (tag === 'pi') return '\\pi'
     if (this.ignoreTag(tag)) return ''

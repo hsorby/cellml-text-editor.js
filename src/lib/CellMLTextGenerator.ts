@@ -171,16 +171,34 @@ export class CellMLTextGenerator {
       // Variable
       return node.textContent?.trim() || ''
     } else if (tag === 'cn') {
-      const value = node.textContent?.trim() || '0'
+      let value = node.textContent?.trim() || '0'
+      const type = node.getAttribute('type')
+
+      // Handle explicit e-notation structure.
+      if (type === 'e-notation') {
+        const children = Array.from(node.childNodes)
+        const sepIndex = children.findIndex((c) => c.nodeType === 1 && (c as Element).localName === 'sep')
+
+        if (sepIndex !== -1) {
+          const mantissa = children
+            .slice(0, sepIndex)
+            .map((c) => c.textContent)
+            .join('')
+            .trim()
+          const exponent = children
+            .slice(sepIndex + 1)
+            .map((c) => c.textContent)
+            .join('')
+            .trim()
+
+          value = `${mantissa}e${exponent}`
+        }
+      }
 
       // Extract the cellml:units attribute
       const units = node.getAttributeNS(CELLML_2_0_NS, 'units')
 
-      if (units) {
-        // Format: 2 {units: dimensionless}
-        return `${value} {units: ${units}}`
-      }
-      return value
+      return units ? `${value} {units: ${units}}` : value
     } else if (tag === 'piecewise') {
       return this.parsePiecewise(node)
     } else if (tag === 'pi') {
