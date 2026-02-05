@@ -60,6 +60,9 @@ export class CellMLTextGenerator {
       this.processComponent(components[i])
     }
 
+    // Ensure single newline after last component.
+    this.output = this.output.trimEnd() + '\n'
+
     this.indentLevel--
     this.append(`enddef;`)
   }
