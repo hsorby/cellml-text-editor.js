@@ -10,13 +10,16 @@
 
       <div class="panel">
         <h3>CellML Text</h3>
-        <textarea
+        <codemirror
           v-model="textOutput"
-          class="code-view"
-          @click="onCursorMove"
-          @keyup="onCursorMove"
-          spellcheck="false"
-        ></textarea>
+          :style="{ height: '400px' }"
+          :autofocus="true"
+          :indent-with-tab="true"
+          :tab-size="2"
+          :extensions="extensions"
+          @update="handleStateUpdate"
+        >
+        </codemirror>
       </div>
     </div>
 
@@ -30,12 +33,15 @@
 <script setup lang="ts">
 // @ts-ignore
 import { inject, nextTick, onMounted, ref, watch } from 'vue'
+import { basicSetup } from 'codemirror'
+import { Codemirror } from 'vue-codemirror'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
 import { CellMLTextGenerator } from './lib/CellMLTextGenerator'
 import { CellMLTextParser, type ParserError } from './lib/CellMLTextParser'
 import { CellMLLatexGenerator } from './lib/CellMLLatexGenerator'
+import { cellml } from './lib/CellMLLanguage'
 
 // @ts-ignore
 import { initLibCellML, updateCellMLModel } from './utils/cellml'
@@ -46,6 +52,8 @@ const cellmlModules = import.meta.glob('./assets/cellml/*.cellml', {
   query: 'raw',
   eager: true,
 }) as Record<string, { default: string }>
+
+const extensions = [basicSetup, cellml()]
 
 // Sample CellML 2.0 XML to start with
 const xmlInput = ref(`<?xml version="1.0" encoding="UTF-8"?>
@@ -188,13 +196,16 @@ const latexContainer = ref<HTMLElement | null>(null)
 let currentDoc: Document | null = null
 const errors = ref<ParserError[]>([])
 
-const onCursorMove = (e: Event) => {
-  const textarea = e.target as HTMLTextAreaElement
-  // Calculate line number from selectionStart
-  const textUpToCursor = textarea.value.substr(0, textarea.selectionStart)
-  cursorLine.value = textUpToCursor.split('\n').length
+const handleStateUpdate = (viewUpdate: any) => {
+  if (viewUpdate.selectionSet || viewUpdate.docChanged) {
+    const state = viewUpdate.state
+    const pos = state.selection.main.head
+    const line = state.doc.lineAt(pos)
 
-  updatePreview()
+    // Update cursorLine for your LaTeX preview logic
+    cursorLine.value = line.number
+    updatePreview()
+  }
 }
 
 const updatePreview = () => {
