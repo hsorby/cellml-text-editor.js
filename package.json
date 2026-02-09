@@ -44,6 +44,7 @@
     "build:grammar": "lezer-generator src/grammar/cellml.lezer -o src/grammar/parser.ts && echo '// @ts-nocheck' | cat - src/grammar/parser.ts > temp && mv temp src/grammar/parser.ts"
   },
   "devDependencies": {
+    "@babel/runtime": "^7.28.6",
     "@codemirror/language": "^6.12.1",
     "@codemirror/state": "^6.5.4",
     "@codemirror/view": "^6.39.13",
@@ -53,6 +54,7 @@
     "@tsconfig/node24": "^24.0.3",
     "@types/katex": "^0.16.8",
     "@types/node": "^24.10.4",
+    "@uiw/codemirror-theme-sublime": "^4.25.4",
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/tsconfig": "^0.8.1",
     "codemirror": "^6.0.2",

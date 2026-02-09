@@ -1,12 +1,19 @@
 const CELLML_2_0_NS = 'http://www.cellml.org/cellml/2.0#'
 
+export interface CellMLTextGeneratorOptions {
+  tabSize?: number | 2
+}
+
 export class CellMLTextGenerator {
   private output: string = ''
   private indentLevel: number = 0
   private domParser: DOMParser
-  private standardIndent: string = '    '
+  private standardIndent: string = '  '
 
-  constructor() {
+  constructor(options: CellMLTextGeneratorOptions = {}) {
+    if (options.tabSize) {
+      this.standardIndent = ' '.repeat(options.tabSize)
+    }
     this.domParser = new DOMParser()
   }
 

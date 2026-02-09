@@ -302,6 +302,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.28.6":
+  version: 7.28.6
+  resolution: "@babel/runtime@npm:7.28.6"
+  checksum: 10c0/358cf2429992ac1c466df1a21c1601d595c46930a13c1d4662fde908d44ee78ec3c183aaff513ecb01ef8c55c3624afe0309eeeb34715672dbfadb7feedb2c0d
+  languageName: node
+  linkType: hard
+
 "@babel/template@npm:^7.27.2, @babel/template@npm:^7.28.6":
   version: 7.28.6
   resolution: "@babel/template@npm:7.28.6"
@@ -1103,6 +1110,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@uiw/codemirror-theme-sublime@npm:^4.25.4":
+  version: 4.25.4
+  resolution: "@uiw/codemirror-theme-sublime@npm:4.25.4"
+  dependencies:
+    "@uiw/codemirror-themes": "npm:4.25.4"
+  checksum: 10c0/4593a147db8d86fca832dfa0616ccfe93aa15d601def60e6d13a07aa69d893c4a4b741c0892733ae9f027f07ef79a2ea6ac4f7195ddfe0dc6c5540a8c6a422c1
+  languageName: node
+  linkType: hard
+
+"@uiw/codemirror-themes@npm:4.25.4":
+  version: 4.25.4
+  resolution: "@uiw/codemirror-themes@npm:4.25.4"
+  dependencies:
+    "@codemirror/language": "npm:^6.0.0"
+    "@codemirror/state": "npm:^6.0.0"
+    "@codemirror/view": "npm:^6.0.0"
+  peerDependencies:
+    "@codemirror/language": ">=6.0.0"
+    "@codemirror/state": ">=6.0.0"
+    "@codemirror/view": ">=6.0.0"
+  checksum: 10c0/34a2d00fbd84795ee0b0d67c0ec2cc907afc2e85a053fe8f94ed35b149e46df07bda9967c47c8aa92fba5011ead54c1c6f9e073efb78cc9f05e2f2c863a4d8a8
+  languageName: node
+  linkType: hard
+
 "@vitejs/plugin-vue@npm:^6.0.3":
   version: 6.0.3
   resolution: "@vitejs/plugin-vue@npm:6.0.3"
@@ -1611,6 +1642,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "cellml-text-editor@workspace:."
   dependencies:
+    "@babel/runtime": "npm:^7.28.6"
     "@codemirror/language": "npm:^6.12.1"
     "@codemirror/state": "npm:^6.5.4"
     "@codemirror/view": "npm:^6.39.13"
@@ -1620,6 +1652,7 @@ __metadata:
     "@tsconfig/node24": "npm:^24.0.3"
     "@types/katex": "npm:^0.16.8"
     "@types/node": "npm:^24.10.4"
+    "@uiw/codemirror-theme-sublime": "npm:^4.25.4"
     "@vitejs/plugin-vue": "npm:^6.0.3"
     "@vue/tsconfig": "npm:^0.8.1"
     codemirror: "npm:^6.0.2"

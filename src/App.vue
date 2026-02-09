@@ -35,6 +35,7 @@
 import { inject, nextTick, onMounted, ref, watch } from 'vue'
 import { basicSetup } from 'codemirror'
 import { Codemirror } from 'vue-codemirror'
+import { sublime } from '@uiw/codemirror-theme-sublime'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
 
@@ -53,7 +54,7 @@ const cellmlModules = import.meta.glob('./assets/cellml/*.cellml', {
   eager: true,
 }) as Record<string, { default: string }>
 
-const extensions = [basicSetup, cellml()]
+const extensions = [sublime, cellml()]
 
 // Sample CellML 2.0 XML to start with
 const xmlInput = ref(`<?xml version="1.0" encoding="UTF-8"?>
@@ -315,7 +316,7 @@ onMounted(async () => {
   console.log(`Loading CellML module: ${currentModule} [${currentIndex}/${Object.keys(cellmlModules).length}]`)
   const cellMLModelString = cellmlModules[currentModule]?.default
   xmlInput.value = updateCellMLModel(cellMLModelString)
-  xmlInput.value = testXmlInput03
+  // xmlInput.value = testXmlInput03
   parser.parse(textOutput.value)
   currentDoc = parser['doc']
 })

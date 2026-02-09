@@ -28,6 +28,7 @@ const RAW_RUNTIME_STATE =
       [null, {\
         "packageLocation": "./",\
         "packageDependencies": [\
+          ["@babel/runtime", "npm:7.28.6"],\
           ["@codemirror/language", "npm:6.12.1"],\
           ["@codemirror/state", "npm:6.5.4"],\
           ["@codemirror/view", "npm:6.39.13"],\
@@ -37,6 +38,7 @@ const RAW_RUNTIME_STATE =
           ["@tsconfig/node24", "npm:24.0.4"],\
           ["@types/katex", "npm:0.16.8"],\
           ["@types/node", "npm:24.10.9"],\
+          ["@uiw/codemirror-theme-sublime", "npm:4.25.4"],\
           ["@vitejs/plugin-vue", "virtual:575179318b6caef4c2210110ad5952457a32831f8e2dc517d7ff927782686467ee5bba60959d063f79b19ac02dbb7dfaf18552e9ae1ced9c2809967f652cdb8f#npm:6.0.3"],\
           ["@vue/tsconfig", "virtual:575179318b6caef4c2210110ad5952457a32831f8e2dc517d7ff927782686467ee5bba60959d063f79b19ac02dbb7dfaf18552e9ae1ced9c2809967f652cdb8f#npm:0.8.1"],\
           ["cellml-text-editor", "workspace:."],\
@@ -490,6 +492,15 @@ const RAW_RUNTIME_STATE =
         "packagePeers": [\
           "@babel/core",\
           "@types/babel__core"\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@babel/runtime", [\
+      ["npm:7.28.6", {\
+        "packageLocation": "../../../.yarn/berry/cache/@babel-runtime-npm-7.28.6-f40c99aeef-10c0.zip/node_modules/@babel/runtime/",\
+        "packageDependencies": [\
+          ["@babel/runtime", "npm:7.28.6"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -1474,6 +1485,43 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["@uiw/codemirror-theme-sublime", [\
+      ["npm:4.25.4", {\
+        "packageLocation": "../../../.yarn/berry/cache/@uiw-codemirror-theme-sublime-npm-4.25.4-cfdc1dd00d-10c0.zip/node_modules/@uiw/codemirror-theme-sublime/",\
+        "packageDependencies": [\
+          ["@uiw/codemirror-theme-sublime", "npm:4.25.4"],\
+          ["@uiw/codemirror-themes", "virtual:cfdc1dd00d9235c2dbf5d0d7f07ca879dcf26b3f159ee4d865f4596ef926c273284e9ce203a29ed2cb8d07c699f47d8bc448f76a451fcf2fd6a43f107cc27456#npm:4.25.4"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@uiw/codemirror-themes", [\
+      ["npm:4.25.4", {\
+        "packageLocation": "../../../.yarn/berry/cache/@uiw-codemirror-themes-npm-4.25.4-6aa403d51e-10c0.zip/node_modules/@uiw/codemirror-themes/",\
+        "packageDependencies": [\
+          ["@uiw/codemirror-themes", "npm:4.25.4"]\
+        ],\
+        "linkType": "SOFT"\
+      }],\
+      ["virtual:cfdc1dd00d9235c2dbf5d0d7f07ca879dcf26b3f159ee4d865f4596ef926c273284e9ce203a29ed2cb8d07c699f47d8bc448f76a451fcf2fd6a43f107cc27456#npm:4.25.4", {\
+        "packageLocation": "./.yarn/__virtual__/@uiw-codemirror-themes-virtual-5117c22ce5/4/.yarn/berry/cache/@uiw-codemirror-themes-npm-4.25.4-6aa403d51e-10c0.zip/node_modules/@uiw/codemirror-themes/",\
+        "packageDependencies": [\
+          ["@codemirror/language", "npm:6.12.1"],\
+          ["@codemirror/state", "npm:6.5.4"],\
+          ["@codemirror/view", "npm:6.39.13"],\
+          ["@types/codemirror__language", null],\
+          ["@types/codemirror__state", null],\
+          ["@types/codemirror__view", null],\
+          ["@uiw/codemirror-themes", "virtual:cfdc1dd00d9235c2dbf5d0d7f07ca879dcf26b3f159ee4d865f4596ef926c273284e9ce203a29ed2cb8d07c699f47d8bc448f76a451fcf2fd6a43f107cc27456#npm:4.25.4"]\
+        ],\
+        "packagePeers": [\
+          "@types/codemirror__language",\
+          "@types/codemirror__state",\
+          "@types/codemirror__view"\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["@vitejs/plugin-vue", [\
       ["npm:6.0.3", {\
         "packageLocation": "../../../.yarn/berry/cache/@vitejs-plugin-vue-npm-6.0.3-5a0355d170-10c0.zip/node_modules/@vitejs/plugin-vue/",\
@@ -2105,6 +2153,7 @@ const RAW_RUNTIME_STATE =
       ["workspace:.", {\
         "packageLocation": "./",\
         "packageDependencies": [\
+          ["@babel/runtime", "npm:7.28.6"],\
           ["@codemirror/language", "npm:6.12.1"],\
           ["@codemirror/state", "npm:6.5.4"],\
           ["@codemirror/view", "npm:6.39.13"],\
@@ -2114,6 +2163,7 @@ const RAW_RUNTIME_STATE =
           ["@tsconfig/node24", "npm:24.0.4"],\
           ["@types/katex", "npm:0.16.8"],\
           ["@types/node", "npm:24.10.9"],\
+          ["@uiw/codemirror-theme-sublime", "npm:4.25.4"],\
           ["@vitejs/plugin-vue", "virtual:575179318b6caef4c2210110ad5952457a32831f8e2dc517d7ff927782686467ee5bba60959d063f79b19ac02dbb7dfaf18552e9ae1ced9c2809967f652cdb8f#npm:6.0.3"],\
           ["@vue/tsconfig", "virtual:575179318b6caef4c2210110ad5952457a32831f8e2dc517d7ff927782686467ee5bba60959d063f79b19ac02dbb7dfaf18552e9ae1ced9c2809967f652cdb8f#npm:0.8.1"],\
           ["cellml-text-editor", "workspace:."],\

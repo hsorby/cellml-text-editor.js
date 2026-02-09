@@ -7,3 +7,4 @@ export { cellml } from './lib/CellMLLanguage'
 
 // Export interfaces.
 export type { ParserOptions, ParserResult, ParserError } from './lib/CellMLTextParser'
+export type { CellMLTextGeneratorOptions } from './lib/CellMLTextGenerator'

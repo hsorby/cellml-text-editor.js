@@ -1,8 +1,9 @@
 import { parser } from '../grammar/parser'
 import { cellmlHighlight } from '../grammar/highlight'
 import { LRLanguage, LanguageSupport, foldNodeProp, foldInside, indentNodeProp } from '@codemirror/language'
+
 // import { styleTags, tags as t } from '@lezer/highlight'
-// 
+//
 // Configure the Parser with Metadata
 // We attach the highlight styles and code folding logic here
 const cellmlParser = parser.configure({
@@ -12,19 +13,18 @@ const cellmlParser = parser.configure({
 
     // Add code folding for blocks (optional but recommended)
     foldNodeProp.add({
-      'Definition Model Units': foldInside,
-      Annotations: foldInside,
+      'Definition Unit': foldInside,
     }),
 
-    // Add auto-indentation logic (optional)
+    // Add auto-indentation logic for blocks.
     indentNodeProp.add({
-      'Definition Model Units': (context) => {
-        const child = context.node.firstChild
-        return child ? context.column(child.from) + 2 : context.node.from + 2
-      },
-      Annotations: (context) => {
-        const child = context.node.firstChild
-        return child ? context.column(child.from) + 2 : context.node.from + 2
+      'Definition Unit': (context: any) => {
+        const baseIndent = context.column(context.node.from)
+        const lineText = context.textAfter.trim()
+        if (lineText.startsWith('enddef;')) {
+          return baseIndent
+        }
+        return baseIndent + context.unit
       },
     }),
   ],
@@ -35,6 +35,7 @@ export const cellmlLanguage = LRLanguage.define({
   parser: cellmlParser,
   languageData: {
     commentTokens: { line: '//' },
+    indentOnInput: /^\s*enddef;$/, // Helps with auto-indenting when typing 'enddef'
   },
 })
 
